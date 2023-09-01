@@ -2,3 +2,5 @@ include README.md
 recursive-include q_dms_ttr_paper/resources *.csv
 recursive-include q_dms_ttr_paper/resources *.json
 recursive-include q_dms_ttr_paper/resources *.yml
+recursive-include q_dms_ttr_paper/data/ *.json
+recursive-include q_dms_ttr_paper/data/ *.csv

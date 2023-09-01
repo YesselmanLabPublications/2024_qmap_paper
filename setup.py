@@ -18,7 +18,7 @@ with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
 setup(
-    name="rna_secstruct",
+    name="q_dms_ttr_paper",
     version="0.1.0",
     description="analysis for q_dms_ttr_paper",
     long_description=readme,
@@ -39,7 +39,7 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     zip_safe=False,
-    keywords="rna_secstruct",
+    keywords="q_dms_ttr_paper",
     classifiers=[
         "Intended Audience :: Developers",
         "Natural Language :: English",
