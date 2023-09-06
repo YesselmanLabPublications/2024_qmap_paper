@@ -5,7 +5,10 @@ import pandas as pd
 
 from q_dms_ttr_paper.logger import setup_applevel_logger, get_logger
 from q_dms_ttr_paper.paths import RESOURCES_PATH, DATA_PATH
-from q_dms_ttr_paper.data_processing import TTRMutsDataProcessor
+from q_dms_ttr_paper.data_processing import (
+    TTRMutsDataProcessor,
+    MTTR6BufferTitrationDataProcessor,
+)
 
 log = get_logger("CLI")
 
@@ -47,7 +50,7 @@ def process_sequencing_data():
     process sequencing data
     """
     setup_applevel_logger()
-    p = TTRMutsDataProcessor()
+    p = MTTR6BufferTitrationDataProcessor()
     p.load_data()
     p.clean_data()
     p.process_data()

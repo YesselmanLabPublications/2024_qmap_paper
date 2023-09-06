@@ -32,12 +32,13 @@ setup(
     package_dir={"q_dms_ttr_paper": "q_dms_ttr_paper"},
     py_modules=[
         "q_dms_ttr_paper/cli",
-        "q_dms_ttr_paper/paths",
         "q_dms_ttr_paper/data_processing",
+        "q_dms_ttr_paper/paths",
+        "q_dms_ttr_paper/titration",
         "q_dms_ttr_paper/logger",
     ],
     include_package_data=True,
-    install_requires=requirements,
+    # install_requires=requirements,
     zip_safe=False,
     keywords="q_dms_ttr_paper",
     classifiers=[

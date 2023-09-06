@@ -1,3 +1,8 @@
+"""
+Handles fitting of 16 point mg2+ titrations for estimating the Mg2+/2 using 
+the hill coefficient equation.
+"""
+
 import numpy as np
 from scipy import optimize
 
@@ -45,13 +50,6 @@ def fit_bootstrap(p0, x, y, function, n_runs=100, n_sigma=1.0):
     mean_pfit = np.mean(ps, 0)
     err_pfit = n_sigma * np.std(ps, 0)
     return mean_pfit, err_pfit
-
-
-def fit_titration(x, y):
-    """ """
-    p0 = [1, 1]
-    pfit, perr = fit_bootstrap(p0, x, y, normalized_hill_equation)
-    return pfit, perr
 
 
 def normalize_data_full(data):
