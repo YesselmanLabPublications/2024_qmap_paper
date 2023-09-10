@@ -6,8 +6,9 @@ import pandas as pd
 from q_dms_ttr_paper.logger import setup_applevel_logger, get_logger
 from q_dms_ttr_paper.paths import RESOURCES_PATH, DATA_PATH
 from q_dms_ttr_paper.data_processing import (
-    TTRMutsDataProcessor,
+    MTTR6MgTitrationDataProcessor,
     MTTR6BufferTitrationDataProcessor,
+    TTRMutsDataProcessor,
 )
 
 log = get_logger("CLI")

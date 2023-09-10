@@ -33,9 +33,10 @@ setup(
     py_modules=[
         "q_dms_ttr_paper/cli",
         "q_dms_ttr_paper/data_processing",
-        "q_dms_ttr_paper/paths",
-        "q_dms_ttr_paper/titration",
         "q_dms_ttr_paper/logger",
+        "q_dms_ttr_paper/paths",
+        "q_dms_ttr_paper/plotting",
+        "q_dms_ttr_paper/titration",
     ],
     include_package_data=True,
     # install_requires=requirements,

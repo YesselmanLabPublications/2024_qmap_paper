@@ -238,8 +238,68 @@ class MTTR6BufferTitrationDataProcessor(DataProcessor):
         )
 
         self.df.to_json(
-            "q_dms_ttr_paper/data/processed/wt_buffer_titra.json", orient="records"
+            "q_dms_ttr_paper/data/processed/wt_mg_titra.json", orient="records"
         )
+
+
+class MTTR6MgTitrationDataProcessor(DataProcessor):
+    """ """
+
+    def __init__(self):
+        self.df: pd.DataFrame = None
+
+    def load_data(self):
+        runs = [
+            "2022_07_27_minittr_50mM_NaC_Mg_titra_seq",
+            "2022_07_28_minittr_0.1M_NaC_Mg_titra_seq",
+            "2022_07_29_minittr_0.15M_NaC_Mg_titr_seq",
+            "2022_08_09_minittr_0.2M_NaC_Mg_titra_seq",
+            "2022_08_10_minittr_0.25M_Mg_titr_seq",
+            "2022_08_11_minittr_0.3M_NaC_Mg_titra_seq",
+        ]
+        self.df = get_data(DATA_PATH + "/raw/sequencing_runs/", runs)
+
+    def clean_data(self):
+        # ensure data is rna
+        self.df = to_rna(self.df)
+        # remove p5 and p3 sequence
+        # remove constructs not related to this analysis
+        include = ["minittr-6-2HP-ref"]
+        self.df = self.df[self.df["name"].isin(include)]
+
+    def process_data(self):
+        self.df = trim_p5_and_p3(self.df)
+        # get motif data
+        # get GAAA tetraloop reactivity data
+        get_gaaa_data(self.df)
+        self.df["tlr"] = get_dms_reactivity_for_wt_tlr(self.df)
+        # get the first reference hairpin at the 5' end
+        self.df["ref_hp_1"] = get_dms_reactivity_for_sub_structure(
+            self.df, SequenceStructure("CGAGUAG", "(.....)"), end=50
+        )
+        self.df["ref_hp_1_as"] = self.df["ref_hp_1"].apply(
+            lambda x: np.mean([x[2], x[5]])
+        )
+        # get the second reference hairpin at the 3' end
+        self.df["ref_hp_2"] = get_dms_reactivity_for_sub_structure(
+            self.df, SequenceStructure("CGAGUAG", "(.....)"), start=50
+        )
+        self.df["ref_hp_2_as"] = self.df["ref_hp_2"].apply(
+            lambda x: np.mean([x[2], x[5]])
+        )
+        # get the ires motif
+        self.df["ires"] = get_dms_reactivity_for_motif(
+            self.df, {"sequence": "GAACUAC&GC", "structure": "(.....(&))"}
+        )
+        # get kinke turn motif
+        self.df["kink_turn"] = get_dms_reactivity_for_sub_structure(
+            self.df, SequenceStructure("CCGAG&CGUUUGACG", "(((((&)..)))..)")
+        )
+        # get the 3x3 motif
+        self.df["3x3_motif"] = get_dms_reactivity_for_sub_structure(
+            self.df, SequenceStructure("GAACA&UACCC", "(...(&)...)")
+        )
+        self.df.to_json("data/wt_mg_titra.json", orient="records")
 
 
 class TTRMutsDataProcessor:
