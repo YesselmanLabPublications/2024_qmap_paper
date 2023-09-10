@@ -6,8 +6,8 @@ import pandas as pd
 from q_dms_ttr_paper.logger import setup_applevel_logger, get_logger
 from q_dms_ttr_paper.paths import RESOURCES_PATH, DATA_PATH
 from q_dms_ttr_paper.data_processing import (
-    MTTR6MgTitrationDataProcessor,
     MTTR6BufferTitrationDataProcessor,
+    MTTR6MgTitrationDataProcessor,
     TTRMutsDataProcessor,
 )
 
@@ -51,7 +51,7 @@ def process_sequencing_data():
     process sequencing data
     """
     setup_applevel_logger()
-    p = MTTR6BufferTitrationDataProcessor()
+    p = MTTR6MgTitrationDataProcessor()
     p.load_data()
     p.clean_data()
     p.process_data()

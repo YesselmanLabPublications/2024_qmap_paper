@@ -238,7 +238,7 @@ class MTTR6BufferTitrationDataProcessor(DataProcessor):
         )
 
         self.df.to_json(
-            "q_dms_ttr_paper/data/processed/wt_mg_titra.json", orient="records"
+            "q_dms_ttr_paper/data/processed/wt_buffer_titra.json", orient="records"
         )
 
 
@@ -299,7 +299,9 @@ class MTTR6MgTitrationDataProcessor(DataProcessor):
         self.df["3x3_motif"] = get_dms_reactivity_for_sub_structure(
             self.df, SequenceStructure("GAACA&UACCC", "(...(&)...)")
         )
-        self.df.to_json("data/wt_mg_titra.json", orient="records")
+        self.df.to_json(
+            "q_dms_ttr_paper/data/processed/wt_mg_titra.json", orient="records"
+        )
 
 
 class TTRMutsDataProcessor:
