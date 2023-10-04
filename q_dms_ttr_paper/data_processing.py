@@ -202,7 +202,20 @@ class MTTR6BufferTitrationDataProcessor(DataProcessor):
         # remove constructs not related to this analysis
         include = ["minittr-6-2HP-ref"]
         self.df = self.df[self.df["name"].isin(include)]
-        # round data
+        # these experiments dont seem to be related to this analysis
+        exclude_exps = [
+            "2022_07_18_C0117_100mM_buffer_Mg2+_titra_CM_BL"
+            "2022_07_18_minittr-6-2HP-ref_NaC_titra_No_MgCl2_CM_RG",
+            "2022_07_19_C0117_Hepes_titra_CM_BL",
+        ]
+        self.df = self.df[~self.df["exp_name"].isin(exclude_exps)]
+        # why do I need this extra line??
+        self.df = self.df[
+            ~(
+                self.df["exp_name"]
+                == "2022_07_18_minittr-6-2HP-ref_NaC_titra_No_MgCl2_CM_RG"
+            )
+        ]
 
     def process_data(self):
         # remove common p5 and p3 sequences
