@@ -48,7 +48,7 @@ def trim_p5_and_p3(df):
     :param df: a dataframe with data
     :return: a trimmed dataframe
     """
-    df_p5 = pd.read_csv(f"{RESOURCES_PATH}/p5_sequences.csv")
+    df_p5 = pd.read_csv(f"{RESOURCES_PATH}/csvs/p5_sequences.csv")
     df_p5 = to_rna(df_p5)
     common_p5_seq = ""
     for p5_seq in df_p5["sequence"]:
@@ -81,19 +81,27 @@ def get_dms_reactivity_for_motif(df, params):
 
 
 def get_dms_reactivity_for_sub_structure(
-    df: pd.DataFrame, sub_seq_struct: SequenceStructure, start=None, end=None
+    df: pd.DataFrame,
+    sub_seq_struct: SequenceStructure,
+    start=None,
+    end=None,
+    error=True,
 ) -> List[List[float]]:
     all_data = []
+    data_len = len(sub_seq_struct.sequence) - sub_seq_struct.sequence.count("&")
     for i, row in df.iterrows():
         ss = SequenceStructure(row["sequence"], row["structure"])
         r = seq_ss_find(ss, sub_seq_struct, start, end)
-        if len(r) == 0:
+        if len(r) == 0 and error:
             msg = (
                 f"Could not find seq:{sub_seq_struct.sequence} "
                 f"ss:{sub_seq_struct.structure} in {row['name']} with seq "
                 f"{row['sequence']} and ss {row['structure']}"
             )
             raise ValueError(msg)
+        elif len(r) == 0:
+            all_data.append([-1] * data_len)
+            continue
         elif len(r) > 1:
             msg = (
                 f"multiple copies of seq:{sub_seq_struct.sequence} "
@@ -109,21 +117,25 @@ def get_dms_reactivity_for_sub_structure(
     return all_data
 
 
-def get_dms_reactivity_for_wt_tlr(df, start=None, end=None):
+def get_dms_reactivity_for_wt_tlr(df, start=None, end=None, error=True):
     # TODO okay this is a problem have to search in a specfic direction.
     # m_ss = structure.SequenceStructure("CCUAAG&UAUGG", "((...(&)..))")
     m_ss = SequenceStructure("UAUGG&CCUAAG", "(..((&))...)")
+    data_len = len(m_ss.sequence) - m_ss.sequence.count("&")
     all_data = []
     for i, row in df.iterrows():
         ss = SequenceStructure(row["sequence"], row["structure"])
         r = seq_ss_find(ss, m_ss, start, end)
-        if len(r) == 0:
+        if len(r) == 0 and error:
             msg = (
                 f"Could not find the tetraloop receptor "
                 f"in {row['name']} with seq "
                 f"{row['sequence']} and ss {row['structure']}"
             )
             raise ValueError(msg)
+        elif len(r) == 0:
+            all_data.append([-1] * data_len)
+            continue
         elif len(r) > 1:
             msg = (
                 f"multiple copies of the tetraloop receptor where found  "
@@ -143,19 +155,20 @@ def get_dms_reactivity_for_wt_tlr(df, start=None, end=None):
 # reused processing functions #########################################################
 
 
-def get_gaaa_data(df):
+def get_gaaa_data(df, error=True):
     """
     generates two new columns in the dataframe one with the gaaa reactivity data
     and one with the average gaaa reactivity data
     :params df: a dataframe with data
     """
     df["gaaa"] = get_dms_reactivity_for_sub_structure(
-        df, SequenceStructure("GGAAAC", "(....)")
+        df, SequenceStructure("GGAAAC", "(....)"), error=error
     )
     df["gaaa_avg"] = df["gaaa"].apply(lambda x: np.mean(x[2:-1]))
 
 
 # specific library processing #########################################################
+# for chemical mapping sequencing runs ################################################
 
 
 class DataProcessor:
@@ -180,12 +193,26 @@ class DataProcessor:
         pass
 
 
+"""
+MTTR6BufferTitrationDataProcessor - covers wild-type sequence with different buffer 
+conditions
+
+MTTR6MgTitrationDataProcessor - covers wild-type sequence with different mg conditions
+
+MTTR6MutsDataProcessor - covers point mutants of the wild-type sequence such as uucg / 
+no-tlr and their mg titrations
+
+TTRMutsDataProcessor - covers the library of mutations from steves paper
+"""
+
+
 class MTTR6BufferTitrationDataProcessor(DataProcessor):
     """
     This covers the original data tests to find the idea buffer conditions
     """
 
     def __init__(self):
+        self.name = "MTTR6BufferTitrationDataProcessor"
         self.df: pd.DataFrame = None
 
     def load_data(self):
@@ -193,7 +220,7 @@ class MTTR6BufferTitrationDataProcessor(DataProcessor):
             "2022_07_26_minittr-6-2HP-ref_buffer_seq",
             "2022_07_20_minittr_Hepes-titra_seq",
         ]
-        self.df = get_data(DATA_PATH + "/raw/sequencing_runs/", runs)
+        self.df = get_data(DATA_PATH + "/sequencing_runs/", runs)
 
     def clean_data(self):
         # ensure data is rna
@@ -259,6 +286,7 @@ class MTTR6MgTitrationDataProcessor(DataProcessor):
     """ """
 
     def __init__(self):
+        self.name = "MTTR6MgTitrationDataProcessor"
         self.df: pd.DataFrame = None
 
     def load_data(self):
@@ -270,7 +298,7 @@ class MTTR6MgTitrationDataProcessor(DataProcessor):
             "2022_08_10_minittr_0.25M_Mg_titr_seq",
             "2022_08_11_minittr_0.3M_NaC_Mg_titra_seq",
         ]
-        self.df = get_data(DATA_PATH + "/raw/sequencing_runs/", runs)
+        self.df = get_data(DATA_PATH + "/sequencing_runs/", runs)
 
     def clean_data(self):
         # ensure data is rna
@@ -317,6 +345,51 @@ class MTTR6MgTitrationDataProcessor(DataProcessor):
         )
 
 
+class MTTR6MutsDataProcessor(DataProcessor):
+    """
+    This covers the point mutants for the wild-type
+    """
+
+    def __init__(self):
+        self.name = "MTTR6MutsDataProcessor"
+        self.df: pd.DataFrame = None
+
+    def load_data(self):
+        runs = [
+            "2023_03_13_no_tlr_Mg_titra_redo_seq",
+            "2023_02_02_minittr_6_uucg_Mg_titra_seq",
+            "2023_02_17_no_3_3_junc_Mg_titr_seq",
+            "2023_03_10_h1_3bp_longer_seq",
+            "2023_03_15_h2_3bp_longer_Mg_titra_seq",
+            "2023_03_22_h3_3bp_longer_Mg_titra_seq",
+        ]
+        self.df = get_data(DATA_PATH + "/sequencing_runs/", runs)
+        # remove anything that does not have minittr in the name
+        self.df = self.df[self.df["name"].str.contains("minittr")]
+
+    def clean_data(self):
+        pass
+
+    def process_data(self):
+        # remove common p5 and p3 sequences
+        self.df = trim_p5_and_p3(self.df)
+        # get GAAA tetraloop reactivity data
+        get_gaaa_data(self.df, error=False)
+        self.df["tlr"] = get_dms_reactivity_for_wt_tlr(self.df, error=False)
+        self.df["ref_hp_1"] = get_dms_reactivity_for_sub_structure(
+            self.df, SequenceStructure("CGAGUAG", "(.....)"), end=50
+        )
+        self.df["ref_hp_1_as"] = self.df["ref_hp_1"].apply(
+            lambda x: np.mean([x[2], x[5]])
+        )
+        self.df["ires"] = get_dms_reactivity_for_motif(
+            self.df, {"sequence": "GAACUAC&GC", "structure": "(.....(&))"}
+        )
+        self.df["kink_turn"] = get_dms_reactivity_for_sub_structure(
+            self.df, SequenceStructure("CCGAG&CGUUUGACG", "(((((&)..)))..)")
+        )
+
+
 class TTRMutsDataProcessor:
     """
     This is the library of approximately 100 mutations that we have for TTR from
@@ -324,6 +397,7 @@ class TTRMutsDataProcessor:
     """
 
     def __init__(self):
+        self.name = "TTRMutsDataProcessor"
         self.df: pd.DataFrame = None
 
     def load_data(self):
@@ -336,7 +410,7 @@ class TTRMutsDataProcessor:
             "2022_08_31_mtt6_set4_seq",
             "2022_09_01_mtt6_set4_seq",
         ]
-        self.df = get_data(DATA_PATH + "/raw/sequencing_runs/", runs)
+        self.df = get_data(DATA_PATH + "/sequencing_runs/", runs)
 
     def clean_data(self):
         # ensure data is rna
@@ -384,14 +458,6 @@ class TTRMutsDataProcessor:
         )
         # get averaged value of the 2 As in the hairpin
         self.df["ref_hp_as"] = self.df["ref_hp"].apply(lambda x: np.mean([x[2], x[5]]))
-        df_muts = pd.read_json(
-            f"{DATA_PATH}/processed/mutations/mttr6_mut_charactization.json"
-        )
-        df_muts.rename({"r_seq": "name"}, axis=1, inplace=True)
-        df_muts = df_muts[
-            ["name", "aligned_seq", "inserts", "deletes", "mut_pos", "muts"]
-        ]
-        self.df = self.df.merge(df_muts, on="name")
         self.df = self.__get_tlr_reactivities(self.df)
         # make sure I save locally
         self.df.to_json(
@@ -420,10 +486,8 @@ class TTRMutsDataProcessor:
                 row["data"][bounds[1][0] : bounds[1][1] - 1]
                 + row["data"][bounds[0][0] + 1 : bounds[0][1]]
             )
-            data = self.__assign_tlr_reactivity(row, data)
             all_data.append(data)
-        df_m = pd.DataFrame(all_data)
-        df = pd.concat([df, df_m], axis=1)
+        df["tlr"] = all_data
         return df
 
     def __assign_tlr_reactivity(self, row, data):
@@ -448,3 +512,26 @@ class TTRMutsDataProcessor:
             mapped_pos += 1
             pos += 1
         return new_cols
+
+
+# compute mg 1 / 2 ###################################################################
+
+
+def compute_all_mg_1_2(df):
+    """
+    for each construct in mttr6 ttr mutant set compute the mg 1/2
+    """
+    data = []
+    for name, g in df.groupby(["name"]):
+        r = compute_mg_1_2(g["mg_conc"], g["gaaa_avg"])
+        data.append(
+            {
+                "name": name,
+                "mg_1_2": r[0][0],
+                "mg_1_2_err": r[1][0],
+                "n": r[0][1],
+                "n_err": r[1][1],
+            }
+        )
+    df_results = pd.DataFrame(data)
+    return df_results

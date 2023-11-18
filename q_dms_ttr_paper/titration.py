@@ -7,14 +7,15 @@ import numpy as np
 from scipy import optimize
 
 
-def normalized_hill_equation(conc, K, n):
+def normalized_hill_equation(conc, K, n, A):
     """
     Assumes a range from 0 to 1
     :param conc: concentration of titration agent either mg2+ or a ligand
     :param K: dissociation constant
     :param n: hill coefficient
+    :param A: maximum value
     """
-    return ((conc / K) ** n) / (1 + (conc / K) ** n)
+    return A * ((conc / K) ** n) / (1 + (conc / K) ** n)
 
 
 def fit_bootstrap(p0, x, y, function, n_runs=100, n_sigma=1.0):
@@ -32,7 +33,7 @@ def fit_bootstrap(p0, x, y, function, n_runs=100, n_sigma=1.0):
     :param n_runs: number of bootstrap runs - default 100
     :param n_sigma: number of sigma to use for confidence interval - default 1.0
     """
-    errfunc = lambda p, x, y: function(x, p[0], p[1]) - y
+    errfunc = lambda p, x, y: function(x, p[0], p[1], p[2]) - y
     # Fit first time
     pfit, perr = optimize.leastsq(errfunc, p0, args=(x, y), full_output=0)
     # Get the stdev of the residuals
@@ -65,7 +66,7 @@ def normalize_data(data):
 
 
 def compute_mg_1_2(mg_conc, data):
-    pstart = [1, 1]
+    pstart = [1, 1, 1]
     norm_data = -normalize_data(np.array(data)) + 1
     pfit, perr = fit_bootstrap(pstart, mg_conc, norm_data, normalized_hill_equation)
     return pfit, perr

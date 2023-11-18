@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 from rna_secstruct_design.selection import get_selection, SecStruct
+from q_dms_ttr_paper.titration import normalize_data, normalized_hill_equation
 
 
 def colors_for_sequence(seq: str):
@@ -105,6 +107,22 @@ def plot_pop_avg_titration(df, titration_col, highlights=None, **kwargs):
         j += 1
     plot_pop_avg_from_row(df.iloc[-1], ax=axes[-1])
     return fig
+
+
+def plot_mg_titration_fit(x, y, mg_1_2, n, max_val, **kwargs):
+    norm_data = -normalize_data(np.array(y)) + 1
+    fig, ax = plt.subplots(1, 1, **kwargs)
+    ax.scatter(x, norm_data, s=100)
+    xs, ys = [], []
+    for j in np.arange(0, 45, 0.25):
+        y = normalized_hill_equation(j, mg_1_2, n, max_val)
+        xs.append(j)
+        ys.append(y)
+    plt.plot(xs, ys, lw=3)
+    # plt.fill_between(xs, ys - r[1][0], ys + r[1][0], alpha=0.2, lw=0)
+    # plt.ylim(-0.05, 1.1)
+    publication_style_ax(ax)
+    return ax
 
 
 # style functions #############################################################
