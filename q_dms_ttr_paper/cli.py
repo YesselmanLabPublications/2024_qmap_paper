@@ -1,6 +1,7 @@
 import click
 import os
 import glob
+import shutil
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -17,15 +18,100 @@ from q_dms_ttr_paper.data_processing import (
     trim,
 )
 from q_dms_ttr_paper import mutation_characterize
-from q_dms_ttr_paper.plotting import plot_pop_avg_titration, plot_mg_titration_fit
+from q_dms_ttr_paper.plotting import (
+    plot_pop_avg_titration,
+    plot_mg_titration_fit,
+    plot_pop_avg_from_row,
+)
+from q_dms_ttr_paper.construct_design import (
+    get_average_dg_dataframe,
+    split_dataframe,
+    add_act_seq_and_ss,
+)
 
 log = get_logger("CLI")
 
 
+def get_motif_data(df_wt, df_uucg, motif_name, motif_seq, motif_ss):
+    data = []
+    for i, row in df_wt.iterrows():
+        count = 0
+        uucg_row = df_uucg[df_uucg["mg_conc"] == row["mg_conc"]].iloc[0]
+        for seq, ss, wt_val, uucg_val in zip(
+            motif_seq, motif_ss, row[motif_name], uucg_row[motif_name]
+        ):
+            count += 1
+            if seq != "A" and seq != "C":
+                continue
+            data.append(
+                {
+                    "name": str(count) + seq,
+                    "seq": seq,
+                    "ss": ss,
+                    "wt_val": wt_val,
+                    "wt_norm": wt_val / row["ref_hp_1_as"],
+                    "uucg_val": uucg_val,
+                    "uucg_norm": uucg_val / uucg_row["ref_hp_1_as"],
+                    "mg_conc": row["mg_conc"],
+                }
+            )
+    df = pd.DataFrame(data)
+    return df
+
+
+# cli commands ####################################################################
+
+
 @click.group()
 def cli():
-    """ """
+    """cli for q_dms_ttr_paper"""
     pass
+
+
+# construct generation ################################################################
+@cli.command()
+def generate_sets():
+    """
+    selects the TLR mutants from the bonilla et. al paper to be used in this study
+    """
+    setup_applevel_logger()
+    df = get_average_dg_dataframe()
+    # this is the table from Bonilla et. al
+    # only contains class A which behave like the wild-type
+    path = "data/construct_design/bonilla_et_al_pnas_2021/table_s3_dG_avgs.csv"
+    df_summary = pd.read_csv(path)
+    df_summary["name"] = [r["seq2"] + "_" + r["seq1"] for _, r in df_summary.iterrows()]
+    df = df.merge(df_summary, on="name")
+    df["dg"] = df["dg_gaaa"]
+    df.drop(
+        columns=[
+            "dg_gaaa",
+            "dg_gaua",
+            "dg_diff",
+            "natural",
+            "seq1",
+            "seq2",
+            "type",
+            "class",
+            "subgroup",
+        ],
+        inplace=True,
+    )
+    df = add_act_seq_and_ss(df)
+    df = df.sort_values("dg")
+    df = df[df["ac_count"] > 3]
+    df = df[df["act_ss"].str.contains("((&))", regex=False)]
+    df_groups = split_dataframe(df, 25)
+    dfs = []
+    output_path = "data/construct_design/sets"
+    os.makedirs(output_path, exist_ok=True)
+    for i, df in enumerate(df_groups):
+        df.to_csv(f"{output_path}/set_{i + 1}.csv", index=False)
+        df = pd.DataFrame(df)
+        df["set"] = i + 1
+        dfs.append(df)
+    df = pd.concat(dfs)
+    df.to_csv(f"{output_path}/all_sets.csv", index=False)
 
 
 @cli.command()
@@ -35,23 +121,26 @@ def get_sequencing_data():
     access to all Yesselman lab data.
     """
     setup_applevel_logger()
-    local_data_path = "q_dms_ttr_paper/data/"
-    os.makedirs(local_data_path + "/raw", exist_ok=True)
-    os.makedirs(local_data_path + "/raw/sequencing_runs", exist_ok=True)
+    local_data_path = "q_dms_ttr_paper/data"
+    sequencing_runs_path = os.path.join(local_data_path, "sequencing_runs")
+    os.makedirs(sequencing_runs_path, exist_ok=True)
     log.info("DATA_PATH: " + local_data_path)
     # put this in a param file
     path = "/Users/jyesselman2/Dropbox/data/sequencing_analysis/"
-    df = pd.read_csv(RESOURCES_PATH + "/sequencing_runs.csv")
+    try:
+        df = pd.read_csv(os.path.join(RESOURCES_PATH, "csvs", "sequencing_runs.csv"))
+    except Exception as e:
+        log.error(f"Failed to read CSV file: {e}")
+        return
     for _, row in df.iterrows():
-        full_path = path + row["run_name"] + "/analysis/summary.json"
+        full_path = os.path.join(path, row["run_name"], "analysis", "summary.json")
         if not os.path.isfile(full_path):
             log.warning(f"File {row['run_name']} is not found at {full_path}")
             continue
         else:
             log.info(f"File {row['run_name']} is found at {full_path} copying")
-        os.system(
-            f"cp {full_path} {local_data_path}/raw/sequencing_runs/{row['run_name']}.json"
-        )
+        destination_path = os.path.join(sequencing_runs_path, f"{row['run_name']}.json")
+        shutil.copy(full_path, destination_path)
 
 
 @cli.command()
@@ -141,6 +230,22 @@ def plot_raw_mut_fractions():
         plt.tight_layout()
         plt.savefig(f"{path}/{exp_name}_buffer_{buffer}/{name}.png", dpi=300)
         plt.clf()
+    # mttr6 muts
+    json_path = "q_dms_ttr_paper/data/processed/mttr6_muts_titra.json"
+    df = pd.read_json(json_path)
+    path = f"plots/titration_full_construct/mttr6_muts_titra/"
+    os.makedirs(path, exist_ok=True)
+    for (name, exp_name), g in df.groupby(["name", "exp_name"]):
+        highlights = []
+        if name != "minittr_6_uucg_fixed":
+            highlights.append({"motif": {"name": "gaaa_tetraloop"}})
+        if name != "minittr_6_no_tlr_fixed":
+            highlights.append({"motif": {"name": "tlr"}})
+        g = trim(g, 20, 0)
+        plot_pop_avg_titration(g, "mg_conc", highlights, figsize=(12, 14))
+        plt.tight_layout()
+        plt.savefig(f"{path}/{name}.png", dpi=300)
+        plt.clf()
     # tlr muts
     highlights = []
     highlights.append({"motif": {"name": "gaaa_tetraloop"}})
@@ -162,7 +267,7 @@ def plot_titrations():
     plot titration as a function of mg2+ taking the average of gaaa tetraloop avg
     """
     setup_applevel_logger()
-    os.makedirs("plots/titration_fits", exist_ok=True)
+    """os.makedirs("plots/titration_fits", exist_ok=True)
     json_path = "q_dms_ttr_paper/data/processed/wt_mg_titra.json"
     df = pd.read_json(json_path)
     path = f"plots/titration_fits/wt_mg_titra/"
@@ -174,6 +279,17 @@ def plot_titrations():
         plt.title(f"{name} - mg_1_2: {round(pfit[0], 3)} - n: {round(pfit[1], 2)}")
         plt.savefig(f"{path}/{exp_name}/{name}_fit.png", dpi=300)
         plt.clf()
+    # mttr6 muts
+    json_path = "q_dms_ttr_paper/data/processed/mttr6_muts_titra.json"
+    df = pd.read_json(json_path)
+    path = f"plots/titration_fits/mttr6_muts_titra/"
+    os.makedirs(path, exist_ok=True)
+    for (name, exp_name), g in df.groupby(["name", "exp_name"]):
+        pfit, perr = compute_mg_1_2(g["mg_conc"], g["gaaa_avg"])
+        plot_mg_titration_fit(g["mg_conc"], g["gaaa_avg"], pfit[0], pfit[1], pfit[2])
+        plt.title(f"{name} - mg_1_2: {round(pfit[0], 3)} - n: {round(pfit[1], 2)}")
+        plt.savefig(f"{path}/{name}_fit.png", dpi=300)
+        plt.clf()"""
     # tlr muts
     json_path = "q_dms_ttr_paper/data/processed/mttr6_data_full.json"
     df = pd.read_json(json_path)
@@ -191,11 +307,61 @@ def plot_titrations():
 
 @cli.command()
 def plot_other_motif_diff():
+    def _plot(df, m_name):
+        for i, (name, g) in enumerate(df.groupby("name")):
+            plt.title(name, fontsize=20)
+            plt.scatter(g["wt_val"], g["uucg_val"])
+            plt.xlabel("WT Mut. Frac.", fontsize=16)
+            plt.ylabel("TL-Knockout Mut. Frac.", fontsize=16)
+            plt.axis("square")
+            plt.savefig(f"plots/other_motifs/{m_name}-{name}.png", dpi=300)
+            plt.clf()
+
     setup_applevel_logger()
     os.makedirs("plots/other_motifs", exist_ok=True)
     json_path = "q_dms_ttr_paper/data/processed/wt_mg_titra.json"
-    df = pd.read_json(json_path)
-    print(df["exp_name"].unique())
+    df_wt = pd.read_json(json_path)
+    df_wt = df_wt[df_wt["exp_name"] == "2022_07_27_C0117_50mM_NaC_Mg2+_titra_CM"]
+    json_path = "q_dms_ttr_paper/data/processed/mttr6_muts_titra.json"
+    df_muts = pd.read_json(json_path)
+    df_uucg = df_muts[df_muts["name"] == "minittr_6_uucg_fixed"]
+    df_uucg = df_uucg.sort_values("mg_conc")
+    # ires
+    sequence = "GAACUACGC"
+    structure = "(.....())"
+    df = get_motif_data(df_wt, df_uucg, "ires", sequence, structure)
+    _plot(df, "ires")
+    sequence = "CCGAG&CGUUUGACG"
+    structure = "(((((&)..)))..)"
+    df = get_motif_data(df_wt, df_uucg, "kink_turn", sequence, structure)
+    _plot(df, "kink_turn")
+    sequence = "GAACA&UACCC"
+    structure = "(...(&)...)"
+    df = get_motif_data(df_wt, df_uucg, "3x3_motif", sequence, structure)
+    _plot(df, "3x3_motif")
+
+
+@cli.command()
+@click.option("-n", "--name", default="minittr_6_uucg_fixed")
+@click.option("-m", "--mg_conc", default=10.0)
+def plot_mut_histo(name, mg_conc):
+    data_files = [
+        "mttr6_data_full.json",
+        "mttr6_muts_titra.json",
+        "wt_buffer_titra.json",
+        "wt_mg_titra.json",
+    ]
+    dfs = []
+    for f in data_files:
+        path = os.path.join(DATA_PATH, "processed", f)
+        df = pd.read_json(path)
+        dfs.append(df)
+    df = pd.concat(dfs)
+    df = df[df["name"] == name]
+    df = df[df["mg_conc"] == mg_conc]
+    plot_pop_avg_from_row(df.iloc[0])
+    # plt.ylim(0, 0.08)
+    plt.show()
 
 
 if __name__ == "__main__":

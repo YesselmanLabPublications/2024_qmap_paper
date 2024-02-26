@@ -1,10 +1,10 @@
 # q_dms_ttr_paper
 
-Layout of directory
+## Layout of directory
 
-q_dms_ttr_paper/
-	# outside information not from this project
-	resources/ 
+q_dms_ttr_paper/<br>
+outside information not from this project<br>
+	resources/ <br>
 		csvs/ 
 			p5_sequences.csv  			# has all the 5' sequences so can be removed
 			sequencing_runs.csv			# has all the sequencing runs required for this paper

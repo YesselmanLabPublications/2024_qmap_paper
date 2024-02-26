@@ -16,7 +16,7 @@ def SASA(name):
     resi_number = ATOM["residue_number"]
     length = len(ATOM.index)
     params = freesasa.Parameters(
-        {"algorithm": freesasa.LeeRichards, "probe-radius": 1.0}
+        {"algorithm": freesasa.LeeRichards, "probe-radius": 0.5}
     )
     structure = freesasa.Structure(f"{name}")
     result = freesasa.calc(structure, params)

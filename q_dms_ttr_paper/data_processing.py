@@ -38,7 +38,14 @@ def trim(df: pd.DataFrame, start: int, end: int) -> pd.DataFrame:
     :return: a trimmed dataframe
     """
     df = seq_ss_trim(df, start, end)
-    df["data"] = df["data"].apply(lambda x: x[start:-end])
+    if start == 0:
+        df["data"] = df["data"].apply(lambda x: x[:-end])
+    elif end == 0:
+        df["data"] = df["data"].apply(lambda x: x[start:])
+    elif start == 0 and end == 0:
+        df["data"] = df["data"].apply(lambda x: x)
+    else:
+        df["data"] = df["data"].apply(lambda x: x[start:-end])
     return df
 
 
@@ -60,18 +67,21 @@ def trim_p5_and_p3(df):
     return trim(df, len(common_p5_seq), 20)
 
 
-def get_dms_reactivity_for_motif(df, params):
+def get_dms_reactivity_for_motif(df, params, error=True):
     """
     finds a specific sequence and structure in each construct and returns them
     """
-
     params = MotifSearchParams(**params)
+    data_len = len(params.sequence) - params.sequence.count("&")
     all_data = []
     for _, row in df.iterrows():
         ss = SecStruct(row["sequence"], row["structure"])
         motifs = ss.get_motifs(params)
-        if len(motifs) != 1:
+        if len(motifs) != 1 and error:
             raise ValueError("More than one motif found")
+        elif len(motifs) == 0:
+            all_data.append([-1] * data_len)
+            continue
         data = []
         for s in motifs[0].strands:
             for e in s:
@@ -360,6 +370,7 @@ class MTTR6MutsDataProcessor(DataProcessor):
             "2023_02_02_minittr_6_uucg_Mg_titra_seq",
             "2023_02_17_no_3_3_junc_Mg_titr_seq",
             "2023_03_10_h1_3bp_longer_seq",
+            "2023_03_14_no_ires_Mg_titr_redo_seq",
             "2023_03_15_h2_3bp_longer_Mg_titra_seq",
             "2023_03_22_h3_3bp_longer_Mg_titra_seq",
         ]
@@ -383,10 +394,16 @@ class MTTR6MutsDataProcessor(DataProcessor):
             lambda x: np.mean([x[2], x[5]])
         )
         self.df["ires"] = get_dms_reactivity_for_motif(
-            self.df, {"sequence": "GAACUAC&GC", "structure": "(.....(&))"}
+            self.df, {"sequence": "GAACUAC&GC", "structure": "(.....(&))"}, error=False
+        )
+        self.df["3x3_motif"] = get_dms_reactivity_for_sub_structure(
+            self.df, SequenceStructure("GAACA&UACCC", "(...(&)...)"), error=False
         )
         self.df["kink_turn"] = get_dms_reactivity_for_sub_structure(
             self.df, SequenceStructure("CCGAG&CGUUUGACG", "(((((&)..)))..)")
+        )
+        self.df.to_json(
+            "q_dms_ttr_paper/data/processed/mttr6_muts_titra.json", orient="records"
         )
 
 
@@ -522,15 +539,19 @@ def compute_all_mg_1_2(df):
     for each construct in mttr6 ttr mutant set compute the mg 1/2
     """
     data = []
+    df = df[df["mg_conc"] != 5.0]
     for name, g in df.groupby(["name"]):
         r = compute_mg_1_2(g["mg_conc"], g["gaaa_avg"])
         data.append(
             {
                 "name": name,
+                "num_points": len(g),
                 "mg_1_2": r[0][0],
                 "mg_1_2_err": r[1][0],
                 "n": r[0][1],
                 "n_err": r[1][1],
+                "a_0": r[0][2],
+                "a_0_err": r[1][2],
             }
         )
     df_results = pd.DataFrame(data)

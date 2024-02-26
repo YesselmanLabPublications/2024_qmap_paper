@@ -5,6 +5,7 @@ the hill coefficient equation.
 
 import numpy as np
 from scipy import optimize
+from sklearn.metrics import mean_squared_error
 
 
 def normalized_hill_equation(conc, K, n, A):
@@ -45,7 +46,10 @@ def fit_bootstrap(p0, x, y, function, n_runs=100, n_sigma=1.0):
     for i in range(n_runs):
         random_delta = np.random.normal(0.0, sigma_err_total, len(y))
         random_y = y + random_delta
-        random_fit, _ = optimize.leastsq(errfunc, p0, args=(x, random_y), full_output=0)
+        random_fit, _ = optimize.leastsq(errfunc, p0, args=(x, random_y))
+        # a hack to stop insane values
+        if random_fit[2] > 10:
+            continue
         ps.append(random_fit)
     ps = np.array(ps)
     mean_pfit = np.mean(ps, 0)
@@ -66,7 +70,7 @@ def normalize_data(data):
 
 
 def compute_mg_1_2(mg_conc, data):
-    pstart = [1, 1, 1]
+    pstart = [1, 1, 0.5]
     norm_data = -normalize_data(np.array(data)) + 1
     pfit, perr = fit_bootstrap(pstart, mg_conc, norm_data, normalized_hill_equation)
     return pfit, perr

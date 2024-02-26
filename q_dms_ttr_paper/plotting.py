@@ -30,6 +30,8 @@ def find_stretches(nums):
     :param nums: list of numbers
     :return: list of stretches
     """
+    if len(nums) == 0:
+        return []
     nums.sort()
     stretches = []
     start = end = nums[0]
@@ -49,13 +51,61 @@ def fill_between(ax, color, x, y, alpha=0.15, **kwargs):
     ax.fill_between(x, y, color=color, alpha=0.15, zorder=-1)
 
 
-def plot_pop_avg(seq, ss, reactivities, ax=None, axis="sequence_structure"):
+def trim(content, prime_5, prime_3):
+    """
+    trims a string or list from the 5' and 3' end
+    :param content: string or list
+    :param prime_5: number of bases to trim from 5' end
+    :param prime_3: number of bases to trim from 3' end
+    :return: trimmed string or list
+    """
+    if isinstance(content, str):
+        return content[prime_5 : -prime_3 or None]
+    elif isinstance(content, list):
+        return content[prime_5 : -prime_3 or len(content)]
+    else:
+        return "Invalid content type. Please provide a string or a list."
+
+
+def plot_pop_avg(
+    seq,
+    ss,
+    reactivities,
+    ax=None,
+    axis="sequence_structure",
+    trim_5p=0,
+    trim_3p=0,
+    highlights=None,
+):
+    """
+    plot dms reactivity for a sequence and secondary structure
+    :param seq: sequence
+    :param ss: secondary structure
+    :param reactivities: list of reactivities
+    :param ax: matplotlib axis
+    :param axis: axis to plot on
+    :param trim_5p: trim 5' end
+    :param trim_3p: trim 3' end
+
+    """
+    seq = trim(seq, trim_5p, trim_3p)
+    ss = trim(ss, trim_5p, trim_3p)
+    reactivities = trim(reactivities, trim_5p, trim_3p)
+    highlight_bounds = []
+    if highlights is None:
+        highlights = []
+    for h in highlights:
+        selection = get_selection(SecStruct(seq, ss), h)
+        for bounds in find_stretches(selection):
+            highlight_bounds.append(bounds)
     colors = colors_for_sequence(seq)
     x = list(range(len(seq)))
     if ax is None:
         fig, ax = plt.subplots(1, figsize=(20, 4))
     ax.bar(range(0, len(reactivities)), reactivities, color=colors)
     ax.set_xticks(x)
+    for bounds in highlight_bounds:
+        fill_between(ax, "gray", bounds, [0, 10])
     if axis == "sequence_structure":
         ax.set_xticklabels([f"{s}\n{nt}" for s, nt in zip(seq, ss)])
     elif axis == "sequence":
