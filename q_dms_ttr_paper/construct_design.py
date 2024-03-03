@@ -5,6 +5,9 @@ Functions to generate the constructs used in this study
 
 import pandas as pd
 import vienna
+from rna_lib_design.structure import rna_structure
+from rna_secstruct_design.selection import get_selection, SecStruct
+from rna_secstruct_design.helix_randomizer import HelixRandomizer
 
 
 def split_dataframe(df, chunk_size=10000):
@@ -190,3 +193,73 @@ def get_average_dg_dataframe():
         ],
     )
     return df
+
+
+def flip_ss(db):
+    new_db = ""
+    for s in db:
+        if s == "(":
+            new_db += ")"
+        elif s == ")":
+            new_db += "("
+        else:
+            new_db += s
+    return new_db
+
+
+def insert_motif_into_mttr6_scaffold(m_seq, m_ss):
+    seq = "GAGCCUAUGGCUGCCACCCGAGCCCUUGAACUACAGGGAACACUGGAAACAGUACCCCCUGCAAGGGCGUUUGACGGUGGCAGCCUAAGGGCUC"
+    ss = "((((((..((((((((((((((((((((.....(((((...((((....))))...))))))))))))..)))..))))))))))...))))))"
+    # print(seq)
+    # print(ss)
+    struct = rna_structure(seq, ss)
+    sub_1 = struct[:4]
+    # print(sub_1.sequence)
+    sub_2 = struct[10:-11]
+    # print(" " * 10 + sub_2.sequence)
+    sub_3 = struct[-4:]
+    seqs = m_seq.split("&")
+    sss = m_ss.split("&")
+    m_struct_1 = rna_structure(seqs[0], sss[0])
+    m_struct_2 = rna_structure(seqs[1], sss[1])
+    new_struct = sub_1 + m_struct_1 + sub_2 + m_struct_2 + sub_3
+    return new_struct
+
+
+def generate_mttr6_scaffold_library(df, path):
+    f = open(path, "w")
+    f.write("name,sequence,structure,dg\n")
+    for i, row in df.iterrows():
+        struct = insert_motif_into_mttr6_scaffold(row["act_seq"], row["act_ss"])
+        folded_ss = vienna.fold(str(struct.sequence)).dot_bracket
+        if struct.dot_bracket != folded_ss:
+            print("failed")
+        f.write(f"{row['name']},{struct.sequence},{struct.dot_bracket},{row['dg']}\n")
+    f.close()
+
+
+def generate_mttr6_randomized_helices_library(df, path):
+    # these are the residues that should not change indenity
+    params = {
+        "motif_1": {"name": "gaaa_tetraloop"},
+        "motif_two_way_junctions": {"m_type": "JUNCTION"},
+        "seq_struct_kink_turn": {
+            "sequence": "CCGAG&CGUUUGACG",
+            "structure": "(((((&)..)))..)",
+        },
+        "range": "1-10,84-94",
+    }
+    hr = HelixRandomizer()
+    data = []
+    for row_i, row in df.iterrows():
+        try:
+            ss = SecStruct(row["sequence"], row["structure"])
+        except:
+            continue
+        sele = get_selection(ss, params)
+        results = hr.run(ss, exclude=sele)
+        data.append([row["name"], results[1], row["structure"], results[0]])
+    df_results = pd.DataFrame(
+        data, columns=["name", "sequence", "structure", "ens_defect"]
+    )
+    df_results.to_csv(path, index=False)

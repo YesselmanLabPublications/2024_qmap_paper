@@ -5,7 +5,6 @@ import shutil
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
 from q_dms_ttr_paper.logger import setup_applevel_logger, get_logger
 from q_dms_ttr_paper.paths import RESOURCES_PATH, DATA_PATH
 from q_dms_ttr_paper.data_processing import (
@@ -27,6 +26,8 @@ from q_dms_ttr_paper.construct_design import (
     get_average_dg_dataframe,
     split_dataframe,
     add_act_seq_and_ss,
+    generate_mttr6_scaffold_library,
+    generate_mttr6_randomized_helices_library,
 )
 
 log = get_logger("CLI")
@@ -101,6 +102,9 @@ def generate_sets():
     df = df.sort_values("dg")
     df = df[df["ac_count"] > 3]
     df = df[df["act_ss"].str.contains("((&))", regex=False)]
+    # fix name to be consistent with paper
+    for i, row in df.iterrows():
+        df.at[i, "name"] = row["name"].split("_")[1] + "_" + row["name"].split("_")[0]
     df_groups = split_dataframe(df, 25)
     dfs = []
     output_path = "data/construct_design/sets"
@@ -115,14 +119,70 @@ def generate_sets():
 
 
 @cli.command()
+def generate_scaffold_sets():
+    setup_applevel_logger()
+    input_path = "data/construct_design/sets"
+    output_path = "data/construct_design/scaffold_sets"
+    os.makedirs(output_path, exist_ok=True)
+    for i in range(1, 5):
+        df = pd.read_csv(f"{input_path}/set_{i}.csv")
+        generate_mttr6_scaffold_library(df, f"{output_path}/mtt6_mutations_set_{i}.csv")
+
+
+@cli.command()
+def randomize_helices():
+    setup_applevel_logger()
+    input_path = "data/construct_design/scaffold_sets"
+    output_path = "data/construct_design/randomized_sets"
+    os.makedirs(output_path, exist_ok=True)
+    for i in range(1, 5):
+        df = pd.read_csv(f"{input_path}/mtt6_mutations_set_{i}.csv")
+        generate_mttr6_randomized_helices_library(
+            df, f"{output_path}/mtt6_mutations_set_{i}.csv"
+        )
+
+
+@cli.command()
+def barcode_libraries():
+    setup_applevel_logger()
+    input_path = "data/construct_design/randomized_sets"
+    output_path = "data/construct_design/final_sets"
+    os.makedirs(output_path, exist_ok=True)
+    for i in range(1, 5):
+        cmd = (
+            f"rld barcode2 --trim-p5 4 --trim-p3 4 -o {output_path}/mtt6_mutations_set_{i} "
+            f"{input_path}/mtt6_mutations_set_{i}.csv --param-file resources/barcode.yml"
+        )
+        os.system(cmd)
+
+
+@cli.command()
+def generate_order():
+    setup_applevel_logger()
+    intput_path = "data/construct_design/final_sets"
+    dfs = []
+    for i in range(1, 5):
+        df = pd.read_csv(f"{intput_path}/mtt6_mutations_set_{i}/results-rna.csv")
+        dfs.append(df)
+    df = pd.concat(dfs)
+    df_org = pd.read_csv("data/construct_design/sets/all_sets.csv")
+    df_org = df_org[["name", "dg", "dg_err"]]
+    df = df.merge(df_org, on="name")
+    df.to_csv("data/construct_design/constructs.csv", index=False)
+
+
+# data processing ####################################################################
+
+
+@cli.command()
 def get_sequencing_data():
     """
-    move data into this folder data/raw/sequencing_runs. Note will not work without
+    move data into this folder data/sequencing_runs/raw. Note will not work without
     access to all Yesselman lab data.
     """
     setup_applevel_logger()
-    local_data_path = "q_dms_ttr_paper/data"
-    sequencing_runs_path = os.path.join(local_data_path, "sequencing_runs")
+    local_data_path = "data/"
+    sequencing_runs_path = os.path.join(local_data_path, "sequencing_runs", "raw")
     os.makedirs(sequencing_runs_path, exist_ok=True)
     log.info("DATA_PATH: " + local_data_path)
     # put this in a param file
