@@ -4,6 +4,10 @@ import glob
 import shutil
 import pandas as pd
 import matplotlib.pyplot as plt
+import warnings
+
+# Suppress BiopythonDeprecationWarning
+warnings.filterwarnings("ignore", message="Bio.pairwise2 has been deprecated")
 
 from q_dms_ttr_paper.logger import setup_applevel_logger, get_logger
 from q_dms_ttr_paper.paths import RESOURCES_PATH, DATA_PATH
@@ -29,6 +33,7 @@ from q_dms_ttr_paper.construct_design import (
     generate_mttr6_scaffold_library,
     generate_mttr6_randomized_helices_library,
 )
+
 
 log = get_logger("CLI")
 
@@ -206,14 +211,16 @@ def get_sequencing_data():
 @cli.command()
 def process_sequencing_data():
     """
-    process sequencing data
+    analyzed the sequencing data and saves the processed data in
+    data/sequencing_runs/processed
     """
     setup_applevel_logger()
+    os.makedirs("data/sequencing_runs/processed", exist_ok=True)
     data_processors = [
-        # MTTR6BufferTitrationDataProcessor(),
-        # MTTR6MgTitrationDataProcessor(),
+        MTTR6BufferTitrationDataProcessor(),
+        MTTR6MgTitrationDataProcessor(),
         MTTR6MutsDataProcessor(),
-        # TTRMutsDataProcessor()
+        TTRMutsDataProcessor(),
     ]
     for p in data_processors:
         log.info("starting to process: " + p.name)
@@ -228,12 +235,10 @@ def characterize_mutations():
     characterize steve's TLR mutations
     """
     setup_applevel_logger()
-    path = "q_dms_ttr_paper/data/processed/rna_map/chemical_mapped.csv"
+    path = "data/construct_design/sets/all_sets.csv"
     df = pd.read_csv(path)
     df_results = mutation_characterize.characterize_mutations(df)
-    df_results.to_json(
-        "q_dms_ttr_paper/data/processed/mutations/mttr6_mut_charactization.json"
-    )
+    df_results.to_json("data/mttr6_mut_charactization.json")
 
 
 @cli.command()

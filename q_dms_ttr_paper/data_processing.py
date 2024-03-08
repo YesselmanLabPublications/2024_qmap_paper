@@ -11,11 +11,12 @@ from rna_secstruct import SecStruct, MotifSearchParams
 
 
 from q_dms_ttr_paper.logger import get_logger
-from q_dms_ttr_paper.paths import RESOURCES_PATH, DATA_PATH
 from q_dms_ttr_paper.titration import compute_mg_1_2
 
 
 log = get_logger("DATA-PROCESSING")
+DATA_PATH = "data"
+RESOURCES_PATH = "q_dms_ttr_paper/resources"
 
 
 def get_data(path, sets) -> pd.DataFrame:
@@ -230,7 +231,7 @@ class MTTR6BufferTitrationDataProcessor(DataProcessor):
             "2022_07_26_minittr-6-2HP-ref_buffer_seq",
             "2022_07_20_minittr_Hepes-titra_seq",
         ]
-        self.df = get_data(DATA_PATH + "/sequencing_runs/", runs)
+        self.df = get_data(DATA_PATH + "/sequencing_runs/raw", runs)
 
     def clean_data(self):
         # ensure data is rna
@@ -288,7 +289,7 @@ class MTTR6BufferTitrationDataProcessor(DataProcessor):
         )
 
         self.df.to_json(
-            "q_dms_ttr_paper/data/processed/wt_buffer_titra.json", orient="records"
+            "data/sequencing_runs/processed/wt_buffer_titra.json", orient="records"
         )
 
 
@@ -308,7 +309,7 @@ class MTTR6MgTitrationDataProcessor(DataProcessor):
             "2022_08_10_minittr_0.25M_Mg_titr_seq",
             "2022_08_11_minittr_0.3M_NaC_Mg_titra_seq",
         ]
-        self.df = get_data(DATA_PATH + "/sequencing_runs/", runs)
+        self.df = get_data(DATA_PATH + "/sequencing_runs/raw/", runs)
 
     def clean_data(self):
         # ensure data is rna
@@ -351,7 +352,7 @@ class MTTR6MgTitrationDataProcessor(DataProcessor):
             self.df, SequenceStructure("GAACA&UACCC", "(...(&)...)")
         )
         self.df.to_json(
-            "q_dms_ttr_paper/data/processed/wt_mg_titra.json", orient="records"
+            "data/sequencing_runs/processed/wt_mg_titra.json", orient="records"
         )
 
 
@@ -374,7 +375,7 @@ class MTTR6MutsDataProcessor(DataProcessor):
             "2023_03_15_h2_3bp_longer_Mg_titra_seq",
             "2023_03_22_h3_3bp_longer_Mg_titra_seq",
         ]
-        self.df = get_data(DATA_PATH + "/sequencing_runs/", runs)
+        self.df = get_data(DATA_PATH + "/sequencing_runs/raw", runs)
         # remove anything that does not have minittr in the name
         self.df = self.df[self.df["name"].str.contains("minittr")]
 
@@ -403,7 +404,7 @@ class MTTR6MutsDataProcessor(DataProcessor):
             self.df, SequenceStructure("CCGAG&CGUUUGACG", "(((((&)..)))..)")
         )
         self.df.to_json(
-            "q_dms_ttr_paper/data/processed/mttr6_muts_titra.json", orient="records"
+            "data/sequencing_runs/processed/mttr6_muts_titra.json", orient="records"
         )
 
 
@@ -427,7 +428,7 @@ class TTRMutsDataProcessor:
             "2022_08_31_mtt6_set4_seq",
             "2022_09_01_mtt6_set4_seq",
         ]
-        self.df = get_data(DATA_PATH + "/sequencing_runs/", runs)
+        self.df = get_data(DATA_PATH + "/sequencing_runs/raw", runs)
 
     def clean_data(self):
         # ensure data is rna
@@ -460,8 +461,8 @@ class TTRMutsDataProcessor:
         # remove common p5 and p3 sequences
         self.df = trim_p5_and_p3(self.df)
         # grab original rna_map experimental data from steves paper
-        df_ref = pd.read_csv(f"{DATA_PATH}/processed/rna_map/chemical_mapped.csv")
-        df_ref = df_ref[["name", "dg", "act_seq", "act_ss"]]
+        df_ref = pd.read_csv(f"data/construct_design/sets/all_sets.csv")
+        df_ref = df_ref[["name", "dg", "dg_err", "act_seq", "act_ss"]]
         self.df = self.df.merge(df_ref, on="name")
         # get GAAA tetraloop reactivity data
         self.df["gaaa"] = get_dms_reactivity_for_sub_structure(
@@ -478,7 +479,7 @@ class TTRMutsDataProcessor:
         self.df = self.__get_tlr_reactivities(self.df)
         # make sure I save locally
         self.df.to_json(
-            "q_dms_ttr_paper/data/processed/mttr6_data_full.json", orient="records"
+            "data/sequencing_runs/processed/mttr6_data_full.json", orient="records"
         )
 
     def __get_duplicates(self, df):

@@ -5,7 +5,6 @@ import warnings
 from Bio import pairwise2
 import click
 
-warnings.filterwarnings("ignore")
 
 # helper functions ####################################################################
 
@@ -45,7 +44,7 @@ def is_bp_mutation(wt, mut, p1, p2):
 
 
 def get_insertions(wt_seqs, r_seq):
-    spl = r_seq.split("_")[::-1]
+    spl = r_seq.split("_")
     a1 = pairwise2.align.globalms(wt_seqs[0], spl[0], 2, -1, -10, -10)
     a2 = pairwise2.align.globalms(wt_seqs[1], spl[1], 2, -1, -10, -10)
     wt_seq_rev_aligned = a1[0].seqA + a2[0].seqA
@@ -61,7 +60,7 @@ def get_insertions(wt_seqs, r_seq):
 
 
 def get_deletions(wt_seqs, r_seq):
-    spl = r_seq.split("_")[::-1]
+    spl = r_seq.split("_")
     a1 = pairwise2.align.globalms(spl[0], wt_seqs[0], 2, -1, -10, -10)
     a2 = pairwise2.align.globalms(spl[1], wt_seqs[1], 2, -1, -10, -10)
     mut_seq_rev_aligned = a1[0].seqA + a2[0].seqA
@@ -106,7 +105,7 @@ def get_aligned_sequence_and_ins_del(df):
     that sequences can contain both insertions and deletions.
     """
     # wild type information
-    wt_seq = "UAUGG_CCUAAG"
+    wt_seq = "CCUAAG_UAUGG"
     wt_seqs = ["CCUAAG", "UAUGG"]
     df["aligned_seq"] = ["" for _ in range(len(df))]
     df["insertions"] = [[] for _ in range(len(df))]
@@ -115,17 +114,18 @@ def get_aligned_sequence_and_ins_del(df):
     df["num_dels"] = [0 for _ in range(len(df))]
     df["size"] = [len(s) for s in df["r_seq"]]
     for ii, row in df.iterrows():
-        if len(row["r_seq"]) > len(wt_seq):
+        if len(row["name"]) > len(wt_seq):
+            print(row["name"])
             inserts, aligned_seq = get_insertions(wt_seqs, row["r_seq"])
-            df.at[ii, "inserts"] = inserts
+            df.at[ii, "insertions"] = inserts
             df.at[ii, "aligned_seq"] = aligned_seq
             df.at[ii, "num_ins"] = len(inserts)
-        elif len(row["r_seq"]) == len(wt_seq):
+        elif len(row["name"]) == len(wt_seq):
             spl = row["r_seq"].split("_")
-            df.at[ii, "aligned_seq"] = spl[1] + spl[0]
+            df.at[ii, "aligned_seq"] = spl[0] + spl[1]
         else:
-            deletes, aligned_seq = get_deletions(wt_seqs, row["r_seq"])
-            df.at[ii, "deletes"] = deletes
+            deletes, aligned_seq = get_deletions(wt_seqs, row["name"])
+            df.at[ii, "deletions"] = deletes
             df.at[ii, "aligned_seq"] = aligned_seq
             df.at[ii, "num_dels"] = len(deletes)
     return df
@@ -139,7 +139,6 @@ def characterize_mutations(df):
     df = df[df["aligned_seq"] != ""]
     # remove constructs where I couldnt align
     df_sub = df[df["aligned_seq"] != ""]
-
     count = 0
     all_bp_pos = [[0, -1], [1, -2], [5, 6]]
     data = []
@@ -161,10 +160,10 @@ def characterize_mutations(df):
             mut = f"{wt}{i + 1}{new}"
             muts.append(mut)
             mut_pos.append(i + 1)
-        data.append([row["r_seq"], bp_muts, mut_pos, muts])
+        data.append([row["name"], bp_muts, mut_pos, muts])
         count += 1
-    df_muts = pd.DataFrame(data, columns="r_seq,bp_muts,mut_pos,mutations".split(","))
-    df_sub = df_sub.merge(df_muts, on="r_seq")
+    df_muts = pd.DataFrame(data, columns="name,bp_muts,mut_pos,mutations".split(","))
+    df_sub = df_sub.merge(df_muts, on="name")
     return df_sub
 
     # print(len(df), count)
