@@ -2,6 +2,11 @@
 .vscode/
 *.DS_store
 
+# dont want to include
+data/
+plots/
+archive/
+
 # C extensions
 *.so
 

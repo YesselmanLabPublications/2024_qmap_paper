@@ -33,6 +33,7 @@ from q_dms_ttr_paper.construct_design import (
     generate_mttr6_scaffold_library,
     generate_mttr6_randomized_helices_library,
 )
+from q_dms_ttr_paper.sasa import compute_solvent_accessability
 
 
 log = get_logger("CLI")
@@ -239,6 +240,33 @@ def characterize_mutations():
     df = pd.read_csv(path)
     df_results = mutation_characterize.characterize_mutations(df)
     df_results.to_json("data/mttr6_mut_charactization.json")
+
+
+@cli.command()
+def compute_sasa():
+    state_1_pdb_path = "data/pdbs/sasa/no_mg_no_gaaa_state_1.pdb"
+    # resi 6 = A4, resi 7 = A5, resi 18 = A8
+    df_sasa_1 = compute_solvent_accessability(state_1_pdb_path)
+    keep = [6, 7, 18]
+    df_sasa_1 = df_sasa_1[df_sasa_1["Nt_num"].isin(keep)]
+    df_sasa_1["state"] = 1
+    # renumber the residues
+    df_sasa_1["Nt_num"] = df_sasa_1["Nt_num"].map({6: 4, 7: 5, 18: 8})
+    state_2_pdb_path = "data/pdbs/sasa/mg_no_gaaa_state_2.pdb"
+    df_sasa_2 = compute_solvent_accessability(state_2_pdb_path)
+    keep = [226, 225, 248]
+    df_sasa_2 = df_sasa_2[df_sasa_2["Nt_num"].isin(keep)]
+    df_sasa_2["state"] = 2
+    # renumber the residues
+    df_sasa_2["Nt_num"] = df_sasa_2["Nt_num"].map({226: 4, 225: 5, 248: 8})
+    state_3_pdb_path = "data/pdbs/sasa/mg_gaaa_state_3.pdb"
+    df_sasa_3 = compute_solvent_accessability(state_3_pdb_path)
+    df_sasa_3 = df_sasa_3[df_sasa_3["Nt_num"].isin(keep)]
+    df_sasa_3["state"] = 3
+    df_sasa_3["Nt_num"] = df_sasa_3["Nt_num"].map({226: 4, 225: 5, 248: 8})
+    df_sasa = pd.concat([df_sasa_1, df_sasa_2, df_sasa_3])
+    df_sasa = df_sasa.rename(columns={"Nt_num": "resi"})
+    df_sasa.to_csv("data/tables/tlr_sasa.csv", index=False)
 
 
 @cli.command()
