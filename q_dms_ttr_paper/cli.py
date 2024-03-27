@@ -34,6 +34,7 @@ from q_dms_ttr_paper.construct_design import (
     generate_mttr6_randomized_helices_library,
 )
 from q_dms_ttr_paper.sasa import compute_solvent_accessability
+from q_dms_ttr_paper.farfar_modeling import setup_farfar_modeling_runs
 
 
 log = get_logger("CLI")
@@ -172,7 +173,7 @@ def generate_order():
         dfs.append(df)
     df = pd.concat(dfs)
     df_org = pd.read_csv("data/construct_design/sets/all_sets.csv")
-    df_org = df_org[["name", "dg", "dg_err"]]
+    df_org = df_org[["name", "dg", "dg_err", "act_seq", "act_ss"]]
     df = df.merge(df_org, on="name")
     df.to_csv("data/construct_design/constructs.csv", index=False)
 
@@ -284,6 +285,11 @@ def process_mg_1_2():
     df_results.to_csv(
         "q_dms_ttr_paper/data/processed/mtt6_data_mg_1_2.csv", index=False
     )
+
+
+@cli.command()
+def generate_3d_modeling_runs():
+    pass
 
 
 # plot generation ####################################################################
