@@ -1,5 +1,14 @@
 # q_dms_ttr_paper
 
+make sure to download the data used in this project from 10.6084/m9.figshare.25331758
+unzip this data and store it in this current directory as data/ <br>
+
+## how to install 
+
+```bash
+git clone 
+```
+
 ## Layout of directory
 
 q_dms_ttr_paper/<br>
@@ -12,6 +21,13 @@ outside information not from this project<br>
 			ttr_mutation_dgs_subset.csv # has only dG data from steves ttr used in this study
 	data/
 		sequencing_runs/ # all runs required for this 
+
+## figure generation 
+
+All final figures were generated with notebooks 
+notebooks/final_figures/
+
+
 
 ## commands to run
 All commands should be run from the root directory of the project. All data should be stored in the data/ directory in the root 
