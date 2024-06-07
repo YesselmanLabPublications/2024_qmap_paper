@@ -1,0 +1,10 @@
+constructs:
+  cols:
+    ref_hp_as:
+      type: ref_hp_as
+    gaaa_avg:
+      type: gaaa_avg
+  motifs:
+    tlr:
+      mtype: twoway
+      mpos: 0
