@@ -18,30 +18,31 @@ with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
 setup(
-    name="q_dms_ttr_paper",
+    name="qmap_paper",
     version="0.1.0",
-    description="analysis for q_dms_ttr_paper",
+    description="analysis for qmap_paper https://www.biorxiv.org/content/10.1101/2024.03.11.584472v1",
     long_description=readme,
     long_description_content_type="test/markdown",
     author="Joe Yesselman",
     author_email="jyesselm@unl.edu",
-    url="https://github.com/jyesselm/q_dms_ttr_paper",
+    url="https://github.com/jyesselm/qmap_paper",
     packages=[
-        "q_dms_ttr_paper",
+        "qmap_paper",
     ],
-    package_dir={"q_dms_ttr_paper": "q_dms_ttr_paper"},
+    package_dir={"qmap_paper": "qmap_paper"},
     py_modules=[
-        "q_dms_ttr_paper/cli",
-        "q_dms_ttr_paper/data_processing",
-        "q_dms_ttr_paper/logger",
-        "q_dms_ttr_paper/paths",
-        "q_dms_ttr_paper/plotting",
-        "q_dms_ttr_paper/titration",
+        "qmap_paper/cli",
+        "qmap_paper/data_processing",
+        "qmap_paper/logger",
+        "qmap_paper/paths",
+        "qmap_paper/plotting",
+        "qmap_paper/titration",
     ],
     include_package_data=True,
+    # TODO uncomment when ready to publish
     # install_requires=requirements,
     zip_safe=False,
-    keywords="q_dms_ttr_paper",
+    keywords="qmap_paper",
     classifiers=[
         "Intended Audience :: Developers",
         "Natural Language :: English",
