@@ -1,9 +1,5 @@
 import pandas as pd
-import numpy as np
-import re
-import warnings
 from Bio import pairwise2
-import click
 
 
 # helper functions ####################################################################

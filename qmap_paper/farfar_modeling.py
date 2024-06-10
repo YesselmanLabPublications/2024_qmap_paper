@@ -1,7 +1,5 @@
-import pandas as pd
 import os
 from biopandas.pdb import PandasPdb
-import shutil
 
 fasta_txt = """
 >loop

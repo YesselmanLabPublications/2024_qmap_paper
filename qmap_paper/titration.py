@@ -5,7 +5,6 @@ the hill coefficient equation.
 
 import numpy as np
 from scipy import optimize
-from sklearn.metrics import mean_squared_error
 
 
 def normalized_hill_equation(conc, K, n, A):

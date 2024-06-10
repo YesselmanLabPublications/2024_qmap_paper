@@ -10,11 +10,12 @@ from seq_tools.structure import find as seq_ss_find
 from rna_secstruct import SecStruct, MotifSearchParams
 
 
-from q_dms_ttr_paper.logger import get_logger
-from q_dms_ttr_paper.titration import compute_mg_1_2
+from qmap_paper.logger import get_logger
+from qmap_paper.titration import compute_mg_1_2
 
 
 log = get_logger("DATA-PROCESSING")
+
 DATA_PATH = "data"
 RESOURCES_PATH = "q_dms_ttr_paper/resources"
 

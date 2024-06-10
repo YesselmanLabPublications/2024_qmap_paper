@@ -9,9 +9,9 @@ import warnings
 # Suppress BiopythonDeprecationWarning
 warnings.filterwarnings("ignore", message="Bio.pairwise2 has been deprecated")
 
-from q_dms_ttr_paper.logger import setup_applevel_logger, get_logger
-from q_dms_ttr_paper.paths import RESOURCES_PATH, DATA_PATH
-from q_dms_ttr_paper.data_processing import (
+from qmap_paper.logger import setup_applevel_logger, get_logger
+from qmap_paper.paths import RESOURCES_PATH, DATA_PATH
+from qmap_paper.data_processing import (
     MTTR6BufferTitrationDataProcessor,
     MTTR6MgTitrationDataProcessor,
     TTRMutsDataProcessor,
@@ -20,21 +20,21 @@ from q_dms_ttr_paper.data_processing import (
     compute_mg_1_2,
     trim,
 )
-from q_dms_ttr_paper import mutation_characterize
-from q_dms_ttr_paper.plotting import (
+from qmap_paper import mutation_characterize
+from qmap_paper.plotting import (
     plot_pop_avg_titration,
     plot_mg_titration_fit,
     plot_pop_avg_from_row,
 )
-from q_dms_ttr_paper.construct_design import (
+from qmap_paper.construct_design import (
     get_average_dg_dataframe,
     split_dataframe,
     add_act_seq_and_ss,
     generate_mttr6_scaffold_library,
     generate_mttr6_randomized_helices_library,
 )
-from q_dms_ttr_paper.sasa import compute_solvent_accessability
-from q_dms_ttr_paper.farfar_modeling import setup_farfar_modeling_runs
+from qmap_paper.sasa import compute_solvent_accessability
+from qmap_paper.farfar_modeling import setup_farfar_modeling_runs
 
 
 log = get_logger("CLI")
