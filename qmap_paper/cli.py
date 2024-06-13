@@ -458,7 +458,7 @@ def plot_titrations():
     plot titration as a function of mg2+ taking the average of gaaa tetraloop avg
     """
     setup_applevel_logger()
-    """os.makedirs("plots/titration_fits", exist_ok=True)
+    os.makedirs("plots/titration_fits", exist_ok=True)
     json_path = "q_dms_ttr_paper/data/processed/wt_mg_titra.json"
     df = pd.read_json(json_path)
     path = f"plots/titration_fits/wt_mg_titra/"
@@ -480,7 +480,7 @@ def plot_titrations():
         plot_mg_titration_fit(g["mg_conc"], g["gaaa_avg"], pfit[0], pfit[1], pfit[2])
         plt.title(f"{name} - mg_1_2: {round(pfit[0], 3)} - n: {round(pfit[1], 2)}")
         plt.savefig(f"{path}/{name}_fit.png", dpi=300)
-        plt.clf()"""
+        plt.clf()
     # tlr muts
     json_path = "q_dms_ttr_paper/data/processed/mttr6_data_full.json"
     df = pd.read_json(json_path)

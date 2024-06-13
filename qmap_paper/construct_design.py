@@ -79,14 +79,19 @@ def indentify_scaffold(seq) -> str:
 
 def get_full_tlr_seq_struct(seq, ss, r_seq):
     """
-    takes the sequence and secondary structure of the RNA and the TLR sequence
+    Takes the sequence and secondary structure of the RNA and the TLR sequence
     to determine the full sequence and secondary structure of the TLR sequence. For
-    some reason the TLR sequence does not have the flanking pairs and doesnt say what
+    some reason the TLR sequence does not have the flanking pairs and doesn't say what
     the secondary structure is.
-    :param seq: the sequence of the RNA
-    :param ss: the secondary structure of the RNA
-    :param r_seq: the TLR sequence
-    :return: the full sequence and secondary structure of the TLR sequence
+
+    Args:
+        seq (str): The sequence of the RNA.
+        ss (str): The secondary structure of the RNA.
+        r_seq (str): The TLR sequence.
+
+    Returns:
+        tuple: A tuple containing the full sequence and secondary structure of the TLR sequence.
+
     """
     ttr = r_seq.split("_")
     pos_1 = seq.find(ttr[0]) - 1
@@ -102,9 +107,14 @@ def get_full_tlr_seq_struct(seq, ss, r_seq):
 
 def add_act_seq_and_ss(df):
     """
-    Adds the actual sequence and secondary structure of the TLR sequence to the dataframe
-    :param df: the dataframe with the RNA sequences
-    :return: the dataframe with the actual sequence and secondary structure of the TLR
+    Adds the full sequence and secondary structure of the TLR sequence to the dataframe.
+
+    Args:
+        df (pandas.DataFrame): The dataframe with the RNA sequences.
+
+    Returns:
+        pandas.DataFrame: The dataframe with the actual sequence and secondary structure of the TLR.
+
     """
     act_seq, act_ss, ac_counts = [], [], []
     for _, row in df.iterrows():
@@ -196,6 +206,20 @@ def get_average_dg_dataframe():
 
 
 def flip_ss(db):
+    """
+    Flips the parentheses in a given string. Fixing a secondary structure when the strands
+    of a motif are flipped.
+
+    Args:
+        db (str): The input string containing parentheses.
+
+    Returns:
+        str: The string with flipped parentheses.
+
+    Example:
+        >>> flip_ss(')))&(((')
+        '(((&)))'
+    """
     new_db = ""
     for s in db:
         if s == "(":
@@ -208,15 +232,22 @@ def flip_ss(db):
 
 
 def insert_motif_into_mttr6_scaffold(m_seq, m_ss):
+    """
+    Inserts a motif into the mttr6 scaffold sequence.
+
+    Args:
+        m_seq (str): The sequence of the motif.
+        m_ss (str): The secondary structure of the motif.
+
+    Returns:
+        str: The new RNA structure with the motif inserted.
+
+    """
     seq = "GAGCCUAUGGCUGCCACCCGAGCCCUUGAACUACAGGGAACACUGGAAACAGUACCCCCUGCAAGGGCGUUUGACGGUGGCAGCCUAAGGGCUC"
     ss = "((((((..((((((((((((((((((((.....(((((...((((....))))...))))))))))))..)))..))))))))))...))))))"
-    # print(seq)
-    # print(ss)
     struct = rna_structure(seq, ss)
     sub_1 = struct[:4]
-    # print(sub_1.sequence)
     sub_2 = struct[10:-11]
-    # print(" " * 10 + sub_2.sequence)
     sub_3 = struct[-4:]
     seqs = m_seq.split("&")
     sss = m_ss.split("&")
@@ -227,6 +258,16 @@ def insert_motif_into_mttr6_scaffold(m_seq, m_ss):
 
 
 def generate_mttr6_scaffold_library(df, path):
+    """
+    Generates a scaffold library for MTTR6 based on the given DataFrame.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame containing the data for generating the scaffold library.
+        path (str): The path to the output file where the scaffold library will be written.
+
+    Returns:
+        None
+    """
     f = open(path, "w")
     f.write("name,sequence,structure,dg\n")
     for i, row in df.iterrows():
@@ -239,6 +280,16 @@ def generate_mttr6_scaffold_library(df, path):
 
 
 def generate_mttr6_randomized_helices_library(df, path):
+    """
+    Generates a randomized helices library based on the given dataframe and saves the results to a CSV file.
+
+    Args:
+        df (pandas.DataFrame): The input dataframe containing sequence and structure information.
+        path (str): The file path to save the generated library.
+
+    Returns:
+        None
+    """
     # these are the residues that should not change indenity
     params = {
         "motif_1": {"name": "gaaa_tetraloop"},

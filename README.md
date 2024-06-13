@@ -14,7 +14,7 @@ pip install .
 ```
 
 ## figure generation 
-All final figures were generated with notebooks `notebooks/`
+All final figures were generated with notebooks `notebooks/figures`
 
 ## commands to run
 All commands should be run from the root directory of the project. All data should be stored in the data/ directory in the root 
@@ -34,9 +34,8 @@ This step involves selecting a subset of data from the study conducted by Bonill
 To execute this step, run the following command:
 ```python
 # Step 1: Data Selection
-python q_dms_ttr_paper/cli.py generate-sets
+python qmap_paper/cli.py generate-sets
 ```
-
 #### step 2
 
 This step involves taking the sets of TLR mutants selected in Step 1 and inserting each mutant into the miniTTR scaffold, replacing the wild-type 11ntR sequence and structure. The resulting sets will be outputted to the directory `data/constructs_data/scaffold_sets`.
@@ -45,7 +44,7 @@ To execute this step, run the following command:
 
 ```python
 # Step 2: Inserting TLR Mutants into miniTTR Scaffold
-python q_dms_ttr_paper/cli.py generate-scaffold-sets
+python qmap_paper/cli.py generate-scaffold-sets
 ```
 #### step 3
 
@@ -53,13 +52,13 @@ python q_dms_ttr_paper/cli.py generate-scaffold-sets
 # step 3 
 # takes the sets of step 2 and randomizes their helical regions to increase the diversity of the library.
 # sets will be outputed to data/constructs_data/randomized_sets
-python q_dms_ttr_paper/cli.py randomize-helices
+python qmap_paper/cli.py randomize-helices
 
 # step 4 
-python q_dms_ttr_paper/cli.py barcode-libraries
+python qmap_paper/cli.py barcode-libraries
 
 # step 5 
-python q_dms_ttr_paper/cli.py generate-order
+python qmap_paper/cli.py generate-order
 
 ```
 
@@ -67,17 +66,17 @@ python q_dms_ttr_paper/cli.py generate-order
 
 ```python
 # move sequencing data into correct folder
-python q_dms_ttr_paper/cli.py get-sequencing-data
+python qmap_paper/cli.py get-sequencing-data
 
 
 
 
 # generate initial dataframes with information about each motif
-python q_dms_ttr_paper/cli.py process-sequencing-data
+python qmap_paper/cli.py process-sequencing-data
 # generate information about mutations of each ttr construct 
-python q_dms_ttr_paper/cli.py characterize-mutations
+python qmap_paper/cli.py characterize-mutations
 # generate the mg 1/2 of all ttr mutants
-python q_dms_ttr_paper/cli.py process-mg-1-2
+python qmap_paper/cli.py process-mg-1-2
 
 ```
 
