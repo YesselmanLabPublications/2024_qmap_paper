@@ -19,28 +19,31 @@ with open("requirements.txt") as f:
 
 setup(
     name="qmap_paper",
-    version="0.1.0",
+    version="1.0.0",
     description="analysis for qmap_paper https://www.biorxiv.org/content/10.1101/2024.03.11.584472v1",
     long_description=readme,
     long_description_content_type="test/markdown",
     author="Joe Yesselman",
     author_email="jyesselm@unl.edu",
-    url="https://github.com/jyesselm/qmap_paper",
+    url="https://github.com/YesselmanLabPublications/2024_qmap_paper",
     packages=[
         "qmap_paper",
     ],
     package_dir={"qmap_paper": "qmap_paper"},
     py_modules=[
         "qmap_paper/cli",
+        "qmap_paper/construct_design",
         "qmap_paper/data_processing",
+        "qmap_paper/farfar_modeling",
         "qmap_paper/logger",
+        "qmap_paper/mutation_characterize",
         "qmap_paper/paths",
         "qmap_paper/plotting",
+        "qmap_paper/sasa",
         "qmap_paper/titration",
     ],
     include_package_data=True,
-    # TODO uncomment when ready to publish
-    # install_requires=requirements,
+    install_requires=requirements,
     zip_safe=False,
     keywords="qmap_paper",
     classifiers=[
