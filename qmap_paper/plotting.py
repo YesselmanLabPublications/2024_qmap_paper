@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
+import matplotlib.axes as axes
 import numpy as np
-from typing import List, Union
+from typing import List, Union, Optional
 
 from rna_secstruct_design.selection import get_selection, SecStruct
 from qmap_paper.titration import normalize_data, normalized_hill_equation
@@ -100,16 +101,23 @@ def find_stretches(nums: List[int]) -> List[List[int]]:
     return stretches
 
 
-def fill_between(ax, color, x, y, alpha=0.15, **kwargs):
+def fill_between(
+    ax: axes.Axes,
+    color: str,
+    x: List[float],
+    y: List[float],
+    alpha: float = 0.15,
+    **kwargs,
+) -> None:
     """
     Fills the area between two curves on the given axes.
 
     Args:
-        ax (matplotlib.axes.Axes): The axes on which to plot.
-        color (str): The color of the filled area.
-        x (array-like): The x-coordinates of the curves defining the area.
-        y (array-like): The y-coordinates of the curves defining the area.
-        alpha (float, optional): The transparency of the filled area. Default is 0.15.
+        ax: The axes on which to plot.
+        color: The color of the filled area.
+        x: The x-coordinates of the curves defining the area.
+        y: The y-coordinates of the curves defining the area.
+        alpha: The transparency of the filled area. Default is 0.15.
         **kwargs: Additional keyword arguments to be passed to the `fill_between` function.
 
     Returns:
@@ -145,35 +153,35 @@ def trim(
 
 
 def plot_pop_avg(
-    seq,
-    ss,
-    reactivities,
-    ax=None,
-    axis="sequence_structure",
-    trim_5p=0,
-    trim_3p=0,
-    highlights=None,
-):
+    seq: str,
+    ss: str,
+    reactivities: List[float],
+    ax: Optional[plt.Axes] = None,
+    axis: str = "sequence_structure",
+    trim_5p: int = 0,
+    trim_3p: int = 0,
+    highlights: Optional[List[tuple]] = None,
+) -> plt.Axes:
     """
     Plot DMS reactivity for a sequence and secondary structure.
 
     Args:
-        seq (str): The sequence.
-        ss (str): The secondary structure.
-        reactivities (list): List of reactivities.
-        ax (matplotlib axis, optional): The matplotlib axis to plot on. If not provided,
+        seq: The sequence.
+        ss: The secondary structure.
+        reactivities: List of reactivities.
+        ax: The matplotlib axis to plot on. If not provided,
             a new figure and axis will be created.
-        axis (str, optional): The axis to plot on. Possible values are
+        axis: The axis to plot on. Possible values are
             "sequence_structure", "sequence", or "structure". Defaults to "sequence_structure".
-        trim_5p (int, optional): The number of nucleotides to trim from the 5' end.
+        trim_5p: The number of nucleotides to trim from the 5' end.
             Defaults to 0.
-        trim_3p (int, optional): The number of nucleotides to trim from the 3' end.
+        trim_3p: The number of nucleotides to trim from the 3' end.
             Defaults to 0.
-        highlights (list, optional): List of highlight regions. Each highlight
+        highlights: List of highlight regions. Each highlight
             region should be a tuple of start and end indices. Defaults to None.
 
     Returns:
-        matplotlib axis: The plotted axis.
+        The plotted axis.
 
     """
     seq = trim(seq, trim_5p, trim_3p)

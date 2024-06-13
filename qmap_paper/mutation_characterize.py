@@ -1,21 +1,55 @@
 import pandas as pd
+from typing import List, Generator, Union, Tuple, Any
 from Bio import pairwise2
 
 
 # helper functions ####################################################################
 
 
-def find_chars_in_str(s, ch):
+def find_chars_in_str(s: str, ch: str) -> Generator[int, None, None]:
+    """Finds the indices of a given character in a string.
+
+    Args:
+        s (str): The input string.
+        ch (str): The character to search for.
+
+    Yields:
+        int: The indices of the character in the string.
+
+    """
     for i, ltr in enumerate(s):
         if ltr == ch:
             yield i
 
 
-def remove_char_from_str(s, i):
+def remove_char_from_str(s: str, i: int) -> tuple:
+    """
+    Removes a character from a string at the specified index.
+
+    Args:
+        s (str): The input string.
+        i (int): The index of the character to remove.
+
+    Returns:
+        tuple: A tuple containing the removed character and the modified string.
+
+    Example:
+        >>> remove_char_from_str('hello', 2)
+        ('l', 'helo')
+    """
     return s[i], s[:i] + s[i + 1 :]
 
 
-def is_bp(bp_name):
+def is_bp(bp_name: str) -> bool:
+    """
+    Checks if a given base pair name is valid.
+
+    Args:
+        bp_name (str): The name of the base pair to check.
+
+    Returns:
+        bool: True if the base pair name is valid, False otherwise.
+    """
     names = "AU,UA,GC,CG,GU,UG".split(",")
     if bp_name in names:
         return True
@@ -23,7 +57,19 @@ def is_bp(bp_name):
         return False
 
 
-def is_bp_mutation(wt, mut, p1, p2):
+def is_bp_mutation(wt: str, mut: str, p1: int, p2: int) -> Union[List[str], None]:
+    """
+    Determines if a given mutation is a base pair mutation.
+
+    Args:
+        wt: The wildtype sequence.
+        mut: The mutated sequence.
+        p1: The index of the first position to compare.
+        p2: The index of the second position to compare.
+
+    Returns:
+        If the mutation is a base pair mutation, returns a list containing the original base pair name and the mutated base pair name. Otherwise, returns None.
+    """
     if wt[p1] == mut[p1]:
         return None
     if wt[p2] == mut[p2]:
@@ -39,7 +85,19 @@ def is_bp_mutation(wt, mut, p1, p2):
 # main functions ####################################################################
 
 
-def get_insertions(wt_seqs, r_seq):
+def get_insertions(wt_seqs: List[str], r_seq: str) -> Tuple[List[str], str]:
+    """
+    Get the insertions in the mutated sequence compared to the wild-type sequences.
+
+    Args:
+        wt_seqs (list): List of wild-type sequences.
+        r_seq (str): Mutated sequence.
+
+    Returns:
+        tuple: A tuple containing:
+            - seq_inserts (list): List of insertions in the mutated sequence.
+            - new_str (str): The mutated sequence with insertions removed.
+    """
     spl = r_seq.split("_")
     a1 = pairwise2.align.globalms(wt_seqs[0], spl[0], 2, -1, -10, -10)
     a2 = pairwise2.align.globalms(wt_seqs[1], spl[1], 2, -1, -10, -10)
@@ -55,7 +113,18 @@ def get_insertions(wt_seqs, r_seq):
     return seq_inserts, new_str
 
 
-def get_deletions(wt_seqs, r_seq):
+def get_deletions(wt_seqs: List[str], r_seq: str) -> Tuple[List[str], str]:
+    """
+    Get deletions in the mutated sequence compared to the wild-type sequences.
+
+    Args:
+        wt_seqs (List[str]): List of wild-type sequences.
+        r_seq (str): Mutated sequence.
+
+    Returns:
+        Tuple[List[str], str]: A tuple containing the list of deletions in the mutated sequence
+        and the mutated sequence aligned to the wild-type sequence.
+    """
     spl = r_seq.split("_")
     a1 = pairwise2.align.globalms(spl[0], wt_seqs[0], 2, -1, -10, -10)
     a2 = pairwise2.align.globalms(spl[1], wt_seqs[1], 2, -1, -10, -10)
@@ -63,13 +132,22 @@ def get_deletions(wt_seqs, r_seq):
     wt_seq_rev_aligned = a1[0].seqB + a2[0].seqB
     deletes = list(find_chars_in_str(mut_seq_rev_aligned, "-"))[::-1]
     seq_deletes = []
-    new_str = wt_seq_rev_aligned
     for delete in deletes:
         seq_deletes.append(f"{delete + 1}{wt_seq_rev_aligned[delete]}")
     return seq_deletes, mut_seq_rev_aligned
 
 
-def get_diff_muts(list1, list2):
+def get_diff_muts(list1: List[str], list2: List[str]) -> int:
+    """
+    Calculates the number of different mutations between two lists.
+
+    Args:
+        list1 (List[str]): The first list of mutations.
+        list2 (List[str]): The second list of mutations.
+
+    Returns:
+        int: The number of different mutations between the two lists.
+    """
     diff = set(list1).symmetric_difference(list2)
     diff_nums = []
     for d in diff:
@@ -78,7 +156,17 @@ def get_diff_muts(list1, list2):
     return len(diff_nums)
 
 
-def get_diff(row1, row2):
+def get_diff(row1: List[Any], row2: List[Any]) -> int:
+    """
+    Calculates the number of differences between two rows.
+
+    Args:
+        row1 (List[Any]): The first row.
+        row2 (List[Any]): The second row.
+
+    Returns:
+        int: The number of differences between the two rows.
+    """
     seq_1 = row1[-6]
     seq_2 = row2[-6]
     count = 0
@@ -93,12 +181,21 @@ def get_diff(row1, row2):
     return count
 
 
-def get_aligned_sequence_and_ins_del(df):
+def get_aligned_sequence_and_ins_del(df: pd.DataFrame) -> pd.DataFrame:
     """
-    for each sequence in the dataframe, get the aligned sequence and the insertions
-    and deletions. Right now this is still naive as it only considers that larger
-    sequences have insertions and smaller sequences have deletions. It is possible
-    that sequences can contain both insertions and deletions.
+    For each sequence in the dataframe, get the aligned sequence and the insertions
+    and deletions.
+
+    Args:
+        df (pandas.DataFrame): The input dataframe containing the sequences.
+
+    Returns:
+        pandas.DataFrame: The modified dataframe with additional columns for aligned sequence,
+        insertions, deletions, number of insertions, number of deletions, and size.
+
+    Notes:
+        This function assumes that larger sequences have insertions and smaller sequences have deletions.
+        It is possible that sequences can contain both insertions and deletions.
     """
     # wild type information
     wt_seq = "CCUAAG_UAUGG"
@@ -127,7 +224,19 @@ def get_aligned_sequence_and_ins_del(df):
     return df
 
 
-def characterize_mutations(df):
+def characterize_mutations(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Characterizes mutations in a DataFrame.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame containing mutation data.
+
+    Returns:
+        pd.DataFrame: The DataFrame with additional columns characterizing the mutations.
+
+    Raises:
+        None
+    """
     df["r_seq"] = df["name"]
     # bonilla scheme for numbering
     wt_seq_rev = "CCUAAGUAUGG"
@@ -161,5 +270,3 @@ def characterize_mutations(df):
     df_muts = pd.DataFrame(data, columns="name,bp_muts,mut_pos,mutations".split(","))
     df_sub = df_sub.merge(df_muts, on="name")
     return df_sub
-
-    # print(len(df), count)

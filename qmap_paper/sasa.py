@@ -1,12 +1,25 @@
 import freesasa
 from biopandas.pdb import PandasPdb
 import pandas as pd
+from typing import List
 
 
-def compute_solvent_accessability(pdb_path):
-    Nt = []
-    Nt_num = []
-    SASA = []
+def compute_solvent_accessability(pdb_path: str) -> pd.DataFrame:
+    """
+    Computes the solvent accessibility of atoms in a protein structure.
+
+    Args:
+        pdb_path: The path to the PDB file.
+
+    Returns:
+        A pandas DataFrame containing the solvent accessibility information for each atom.
+
+    Raises:
+        FileNotFoundError: If the PDB file specified by pdb_path does not exist.
+    """
+    Nt: List[str] = []
+    Nt_num: List[int] = []
+    SASA: List[float] = []
     ppdb = PandasPdb()
     ppdb.read_pdb(f"{pdb_path}")
     ATOM = ppdb.df["ATOM"]

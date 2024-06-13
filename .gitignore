@@ -6,6 +6,7 @@
 data/
 plots/
 archive/
+not_in_repo/
 
 # C extensions
 *.so

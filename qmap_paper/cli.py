@@ -1,6 +1,5 @@
 import click
 import os
-import glob
 import shutil
 import pandas as pd
 import matplotlib.pyplot as plt

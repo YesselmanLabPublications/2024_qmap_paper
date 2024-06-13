@@ -11,6 +11,9 @@ cd 2024_qmap_paper
 pip install .
 # go to figshare and download the data and unzip it in the "2024_qmap_paper" directory
 # NOTE if you do not put the data there things will not work properly
+
+#requires viennaRNA which can be installed via conda 
+conda install -c bioconda viennarna
 ```
 
 ## figure generation 

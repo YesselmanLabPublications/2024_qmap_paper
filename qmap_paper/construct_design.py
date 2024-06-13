@@ -1,6 +1,5 @@
 """
 Functions to generate the constructs used in this study
-
 """
 
 import pandas as pd

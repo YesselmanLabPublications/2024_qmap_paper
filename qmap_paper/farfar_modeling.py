@@ -14,18 +14,47 @@ g{seq1}
 
 
 def get_dataframe_from_pdb(pdb_path):
+    """
+    Reads a PDB file and returns the 'ATOM' records as a pandas DataFrame.
+
+    Args:
+        pdb_path (str): The path to the PDB file.
+
+    Returns:
+        pandas.DataFrame: The 'ATOM' records from the PDB file.
+
+    """
     ppdb = PandasPdb()
     ppdb.read_pdb(pdb_path)
     return ppdb.df["ATOM"]
 
 
 def write_pdb(df, pdb_path):
+    """
+    Writes the given DataFrame to a PDB file.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame containing the ATOM records.
+        pdb_path (str): The path to the output PDB file.
+
+    Returns:
+        None
+    """
     ppdb = PandasPdb()
     ppdb.df["ATOM"] = df
     ppdb.to_pdb(path=pdb_path, records=["ATOM"], gz=False, append_newline=True)
 
 
 def setup_farfar_modeling_runs(df):
+    """
+    Sets up the FARFAR modeling runs based on the given dataframe.
+
+    Args:
+        df (pandas.DataFrame): The dataframe containing the necessary data for setting up the modeling runs.
+
+    Returns:
+        None
+    """
     output_path = "test_output/farfar_modeling"
     os.makedirs(output_path, exist_ok=True)
     for i, row in df.iterrows():

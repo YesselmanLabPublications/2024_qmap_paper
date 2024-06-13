@@ -193,6 +193,20 @@ def get_dms_reactivity_for_sub_structure(
     end=None,
     error=True,
 ) -> List[List[float]]:
+    """
+    Retrieves the DMS reactivity data for a given sub-sequence and structure from a DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the data.
+        sub_seq_struct (SequenceStructure): The sub-sequence and structure to search for.
+        start (int, optional): The starting position of the sub-sequence. Defaults to None.
+        end (int, optional): The ending position of the sub-sequence. Defaults to None.
+        error (bool, optional): Whether to raise an error if the sub-sequence and structure are not found. Defaults to True.
+        If no error is raised it will return -1 for each expected data point.
+
+    Returns:
+        List[List[float]]: A list of lists containing the DMS reactivity data for each position in the sub-sequence.
+    """
     all_data = []
     data_len = len(sub_seq_struct.sequence) - sub_seq_struct.sequence.count("&")
     for i, row in df.iterrows():
@@ -224,7 +238,24 @@ def get_dms_reactivity_for_sub_structure(
 
 
 def get_dms_reactivity_for_wt_tlr(df, start=None, end=None, error=True):
-    # TODO okay this is a problem have to search in a specfic direction.
+    """
+    Retrieves the DMS reactivity data for the wild-type tetraloop receptor (wt_tlr) from a DataFrame.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame containing the data.
+        start (int, optional): The starting position for searching the tetraloop receptor. Defaults to None.
+        end (int, optional): The ending position for searching the tetraloop receptor. Defaults to None.
+        error (bool, optional): Whether to raise an error if the tetraloop receptor is not found. Defaults to True.
+
+    Returns:
+        list: A list of lists containing the DMS reactivity data for each row in the DataFrame. Each inner list represents the reactivity data for the wt_tlr.
+
+    Raises:
+        ValueError: If the tetraloop receptor is not found in a row and error is set to True.
+        ValueError: If multiple copies of the tetraloop receptor are found in a row.
+
+    """
+    # NOTE okay this is a problem have to search in a specfic direction.
     # m_ss = structure.SequenceStructure("CCUAAG&UAUGG", "((...(&)..))")
     m_ss = SequenceStructure("UAUGG&CCUAAG", "(..((&))...)")
     data_len = len(m_ss.sequence) - m_ss.sequence.count("&")
@@ -278,23 +309,34 @@ def get_gaaa_data(df, error=True):
 
 
 class DataProcessor:
+    """A class for processing data."""
+
     def load_data(self):
         """
-        get data from the raw folder and load it into a dataframe
+        Get data from the raw folder and load it into a dataframe.
+
+        Returns:
+            None
         """
         pass
 
     def clean_data(self):
         """
-        makes sure we have the correct data removes any duplicates and data that
-        is not related to the project
+        Make sure we have the correct data by removing any duplicates and data that
+        is not related to the project.
+
+        Returns:
+            None
         """
         pass
 
     def process_data(self):
         """
-        performs any processing for the data to be useful after. This includes
-        getting data on motifs, mutational analysis, titraiton analysis, etc
+        Perform any processing for the data to be useful after. This includes
+        getting data on motifs, mutational analysis, titration analysis, etc.
+
+        Returns:
+            None
         """
         pass
 
@@ -314,7 +356,17 @@ TTRMutsDataProcessor - covers the library of mutations from steves paper
 
 class MTTR6BufferTitrationDataProcessor(DataProcessor):
     """
-    This covers the original data tests to find the idea buffer conditions
+    This class represents a data processor for MTTR6 buffer titration data.
+    It covers the original data tests to find the ideal buffer conditions.
+
+    Attributes:
+        name (str): The name of the data processor.
+        df (pd.DataFrame): The DataFrame containing the data.
+
+    Methods:
+        load_data: Loads the data from the specified runs.
+        clean_data: Cleans the loaded data by removing irrelevant entries.
+        process_data: Processes the cleaned data by extracting specific features.
     """
 
     def __init__(self):
@@ -322,6 +374,9 @@ class MTTR6BufferTitrationDataProcessor(DataProcessor):
         self.df: pd.DataFrame = None
 
     def load_data(self):
+        """
+        Loads the data from the specified runs.
+        """
         runs = [
             "2022_07_26_minittr-6-2HP-ref_buffer_seq",
             "2022_07_20_minittr_Hepes-titra_seq",
@@ -329,6 +384,24 @@ class MTTR6BufferTitrationDataProcessor(DataProcessor):
         self.df = get_data(DATA_PATH + "/sequencing_runs/raw", runs)
 
     def clean_data(self):
+        """
+        Cleans the loaded data by removing irrelevant entries.
+
+        Removes irrelevant entries from the loaded data based on specific criteria.
+        The cleaning process includes the following steps:
+        1. Converts the data to RNA format.
+        2. Removes entries with names not included in the 'include' list.
+        3. Removes entries with experiment names included in the 'exclude_exps' list.
+        4. Removes entries with a specific experiment name.
+
+        Note: This method modifies the 'df' attribute of the object.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         # ensure data is rna
         self.df = to_rna(self.df)
         # remove p5 and p3 sequence
@@ -351,6 +424,25 @@ class MTTR6BufferTitrationDataProcessor(DataProcessor):
         ]
 
     def process_data(self):
+        """
+        Process the data by performing various operations on the DataFrame.
+
+        This method performs the following operations:
+        1. Removes common p5 and p3 sequences from the DataFrame.
+        2. Retrieves GAAA tetraloop reactivity data.
+        3. Calculates the reactivity for the wild-type TLR (tlr).
+        4. Retrieves the reactivity for the first reference hairpin at the 5' end (ref_hp_1).
+        5. Calculates the average reactivity for the first reference hairpin at the 5' end (ref_hp_1_as).
+        6. Retrieves the reactivity for the second reference hairpin at the 3' end (ref_hp_2).
+        7. Calculates the average reactivity for the second reference hairpin at the 3' end (ref_hp_2_as).
+        8. Retrieves the reactivity for the ires motif.
+        9. Retrieves the reactivity for the kinke turn motif.
+        10. Retrieves the reactivity for the 3x3 motif.
+        11. Saves the processed DataFrame to a JSON file.
+
+        Returns:
+            None
+        """
         # remove common p5 and p3 sequences
         self.df = trim_p5_and_p3(self.df)
         # get GAAA tetraloop reactivity data
@@ -389,13 +481,23 @@ class MTTR6BufferTitrationDataProcessor(DataProcessor):
 
 
 class MTTR6MgTitrationDataProcessor(DataProcessor):
-    """ """
+    """Processes MTTR6 Mg Titration Data.
+
+    This class is responsible for loading, cleaning, and processing MTTR6 Mg titration data.
+    It inherits from the DataProcessor base class.
+
+    Attributes:
+        name (str): The name of the data processor.
+        df (pd.DataFrame): The data frame containing the loaded data.
+
+    """
 
     def __init__(self):
         self.name = "MTTR6MgTitrationDataProcessor"
         self.df: pd.DataFrame = None
 
     def load_data(self):
+        """Loads the data from sequencing runs."""
         runs = [
             "2022_07_27_minittr_50mM_NaC_Mg_titra_seq",
             "2022_07_28_minittr_0.1M_NaC_Mg_titra_seq",
@@ -407,6 +509,18 @@ class MTTR6MgTitrationDataProcessor(DataProcessor):
         self.df = get_data(DATA_PATH + "/sequencing_runs/raw/", runs)
 
     def clean_data(self):
+        """Cleans the loaded data.
+
+        This method performs data cleaning operations on the loaded data. It ensures that the data is in RNA format by
+        calling the `to_rna` function. It also removes the p5 and p3 sequences and any constructs that are not related to
+        the current analysis.
+
+        Args:
+            self: The instance of the class.
+
+        Returns:
+            None
+        """
         # ensure data is rna
         self.df = to_rna(self.df)
         # remove p5 and p3 sequence
@@ -415,6 +529,18 @@ class MTTR6MgTitrationDataProcessor(DataProcessor):
         self.df = self.df[self.df["name"].isin(include)]
 
     def process_data(self):
+        """Processes the cleaned data.
+
+        This method performs various data processing steps on the cleaned data.
+        It trims the P5 and P3 regions, retrieves motif data, calculates reactivity
+        for different hairpin structures, and saves the processed data to a JSON file.
+
+        Args:
+            self (object): The instance of the class.
+
+        Returns:
+            None
+        """
         self.df = trim_p5_and_p3(self.df)
         # get motif data
         # get GAAA tetraloop reactivity data
@@ -453,7 +579,12 @@ class MTTR6MgTitrationDataProcessor(DataProcessor):
 
 class MTTR6MutsDataProcessor(DataProcessor):
     """
-    This covers the point mutants for the wild-type
+    This class represents a data processor for the MTTR6Muts dataset.
+    It covers the point mutants for the wild-type.
+
+    Attributes:
+        name (str): The name of the data processor.
+        df (pd.DataFrame): The DataFrame to store the processed data.
     """
 
     def __init__(self):
@@ -461,6 +592,9 @@ class MTTR6MutsDataProcessor(DataProcessor):
         self.df: pd.DataFrame = None
 
     def load_data(self):
+        """
+        Loads the data for the MTTR6Muts dataset.
+        """
         runs = [
             "2023_03_13_no_tlr_Mg_titra_redo_seq",
             "2023_02_02_minittr_6_uucg_Mg_titra_seq",
@@ -475,9 +609,26 @@ class MTTR6MutsDataProcessor(DataProcessor):
         self.df = self.df[self.df["name"].str.contains("minittr")]
 
     def clean_data(self):
+        """
+        Cleans the loaded data.
+        """
         pass
 
     def process_data(self):
+        """
+        Processes the cleaned data.
+
+        This method performs various data processing steps on the cleaned data.
+        It removes common p5 and p3 sequences, retrieves GAAA tetraloop reactivity data,
+        calculates reactivity for specific sub-structures, and saves the processed data
+        to a JSON file.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         # remove common p5 and p3 sequences
         self.df = trim_p5_and_p3(self.df)
         # get GAAA tetraloop reactivity data
@@ -505,8 +656,11 @@ class MTTR6MutsDataProcessor(DataProcessor):
 
 class TTRMutsDataProcessor(DataProcessor):
     """
-    This is the library of approximately 100 mutations that we have for TTR from
-    steves bonilla's paper.
+    This class represents a data processor for TTR mutations.
+
+    Attributes:
+        name (str): The name of the data processor.
+        df (pd.DataFrame): The DataFrame containing the data.
     """
 
     def __init__(self):
@@ -514,6 +668,9 @@ class TTRMutsDataProcessor(DataProcessor):
         self.df: pd.DataFrame = None
 
     def load_data(self):
+        """
+        Loads the data into the DataFrame.
+        """
         runs = [
             "2022_08_25_mtt6_set4_1st3_seq",
             "2022_08_26_mtt6_set4_2nd3_seq",
@@ -526,6 +683,9 @@ class TTRMutsDataProcessor(DataProcessor):
         self.df = get_data(DATA_PATH + "/sequencing_runs/raw", runs)
 
     def clean_data(self):
+        """
+        Cleans the data by applying various transformations and filters.
+        """
         # ensure data is rna
         self.df = to_rna(self.df)
         # fix some errors in the data
@@ -553,6 +713,9 @@ class TTRMutsDataProcessor(DataProcessor):
         self.df["data"] = self.df["data"].apply(lambda x: [round(y, 5) for y in x])
 
     def process_data(self):
+        """
+        Processes the data by applying various transformations and calculations.
+        """
         # remove common p5 and p3 sequences
         self.df = trim_p5_and_p3(self.df)
         # fix naming
@@ -582,6 +745,15 @@ class TTRMutsDataProcessor(DataProcessor):
         )
 
     def __get_duplicates(self, df):
+        """
+        Helper method to find duplicates in the DataFrame.
+
+        Args:
+            df (pd.DataFrame): The DataFrame to check for duplicates.
+
+        Returns:
+            list: A list of tuples containing the duplicate information.
+        """
         duplicates = []
         for i, g in df.groupby(["name", "mg_conc"]):
             unique_runs = g["run_name"].unique()
@@ -592,6 +764,15 @@ class TTRMutsDataProcessor(DataProcessor):
         return duplicates
 
     def __get_tlr_reactivities(self, df) -> pd.DataFrame:
+        """
+        Helper method to calculate TLR reactivities.
+
+        Args:
+            df (pd.DataFrame): The DataFrame containing the data.
+
+        Returns:
+            pd.DataFrame: The DataFrame with TLR reactivities added.
+        """
         all_data = []
         for i, row in df.iterrows():
             full_ss = SequenceStructure(row["sequence"], row["structure"])
@@ -613,7 +794,23 @@ class TTRMutsDataProcessor(DataProcessor):
 
 def compute_all_mg_1_2(df):
     """
-    for each construct in mttr6 ttr mutant set compute the mg 1/2
+    Computes the mg 1/2 values for each construct in the mttr6 ttr mutant set.
+
+    Args:
+        df (pandas.DataFrame): The input DataFrame containing the data.
+
+    Returns:
+        pandas.DataFrame: A DataFrame with the computed mg 1/2 values for each construct.
+
+    Raises:
+        None
+
+    Example:
+        >>> df = pd.DataFrame({'name': ['A', 'A', 'B', 'B'], 'mg_conc': [1.0, 2.0, 1.0, 2.0], 'gaaa_avg': [0.5, 0.8, 0.3, 0.6]})
+        >>> compute_all_mg_1_2(df)
+           name  num_points  mg_1_2  mg_1_2_err  n  n_err  a_0  a_0_err
+        0     A           2     1.5         0.1  3    0.2  0.4      0.05
+        1     B           2     1.2         0.2  2    0.1  0.3      0.03
     """
     data = []
     df = df[df["mg_conc"] != 5.0]
