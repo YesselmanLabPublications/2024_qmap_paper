@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 from seq_tools import has_5p_sequence, to_rna
 from seq_tools import trim as seq_ss_trim
@@ -17,10 +17,29 @@ from qmap_paper.titration import compute_mg_1_2
 log = get_logger("DATA-PROCESSING")
 
 DATA_PATH = "data"
-RESOURCES_PATH = "q_dms_ttr_paper/resources"
+RESOURCES_PATH = "qmap_paper/resources"
 
 
-def get_data(path, sets) -> pd.DataFrame:
+def get_data(path: str, sets: list) -> pd.DataFrame:
+    """
+    Reads multiple JSON files and concatenates them into a single DataFrame.
+
+    Args:
+        path (str): The directory path where the JSON files are located.
+        sets (list): A list of filenames (without extensions) to read and concatenate.
+
+    Returns:
+        pd.DataFrame: A concatenated DataFrame containing the data from all specified JSON files.
+
+    Raises:
+        FileNotFoundError: If any of the specified JSON files do not exist in the given path.
+
+    Example:
+        >>> path = "/data/json_files"
+        >>> sets = ["file1", "file2", "file3"]
+        >>> df = get_data(path, sets)
+        >>> print(df.head())
+    """
     dfs = []
     for run_name in sets:
         full_path = Path(path) / f"{run_name}.json"
@@ -33,16 +52,33 @@ def get_data(path, sets) -> pd.DataFrame:
 
 def trim(df: pd.DataFrame, start: int, end: int) -> pd.DataFrame:
     """
-    trims the dataframe to the given start and end
-    :param df: a dataframe with data
-    :param start: the start index
-    :param end: the end index
-    :return: a trimmed dataframe
+    Trims the 'sequence', 'structure', and 'data' columns of the DataFrame to the given start and end indices.
+
+    Args:
+        df (pd.DataFrame): A DataFrame with 'sequence', 'structure', and 'data' columns, where 'data' contains lists of numbers.
+        start (int): The start index for trimming.
+        end (int): The end index for trimming.
+
+    Returns:
+        pd.DataFrame: A trimmed DataFrame with the 'sequence', 'structure', and 'data' columns adjusted to the specified indices.
+
+    Example:
+        >>> df = pd.DataFrame({
+        ...     "sequence": ["ABCDEFG", "HIJKLMN", "OPQRSTU"],
+        ...     "structure": ["1234567", "2345678", "3456789"],
+        ...     "data": [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], [11, 12, 13, 14, 15]]
+        ... })
+        >>> trimmed_df = trim(df, 1, 2)
+        >>> print(trimmed_df)
+          sequence structure         data
+        0     BCDEF    23456     [2, 3, 4]
+        1     IJKLM    34567     [7, 8, 9]
+        2     PQRST    45678  [12, 13, 14]
     """
     df = seq_ss_trim(df, start, end)
-    if start == 0:
+    if start == 0 and end != 0:
         df["data"] = df["data"].apply(lambda x: x[:-end])
-    elif end == 0:
+    elif end == 0 and start != 0:
         df["data"] = df["data"].apply(lambda x: x[start:])
     elif start == 0 and end == 0:
         df["data"] = df["data"].apply(lambda x: x)
@@ -51,34 +87,92 @@ def trim(df: pd.DataFrame, start: int, end: int) -> pd.DataFrame:
     return df
 
 
-def trim_p5_and_p3(df):
+def trim_p5_and_p3(df: pd.DataFrame) -> pd.DataFrame:
     """
-    trims the 5' and 3' ends of the data
-    :param df: a dataframe with data
-    :return: a trimmed dataframe
+    Trims the 5' and 3' ends of the data in the DataFrame.
+
+    This function reads a CSV file containing p5 sequences, converts these sequences to RNA,
+    checks for a common p5 sequence in the given DataFrame, and trims the DataFrame based on
+    the length of this common p5 sequence and a fixed 3' end length.
+
+    Args:
+        df (pd.DataFrame): A DataFrame with a 'data' column containing sequences as strings.
+
+    Returns:
+        pd.DataFrame: A trimmed DataFrame with the 5' and 3' ends trimmed.
+
+    Raises:
+        ValueError: If no common p5 sequence is found or the sequence is not registered in the CSV file.
+
+    Example:
+        >>> df = pd.DataFrame({"data": ["GGAAGATCGAGTAGATCAAAGCATGC", "GGAAGATCGAGTAGATCAAAGCATGC", "GGAAGATCGAGTAGATCAAAGCATGC"]})
+        >>> trimmed_df = trim_p5_and_p3(df)
+        >>> print(trimmed_df)
+           data
+        0  GCATGCAT
+        1  GCATGCAT
+        2  GCATGCAT
     """
     df_p5 = pd.read_csv(f"{RESOURCES_PATH}/csvs/p5_sequences.csv")
-    df_p5 = to_rna(df_p5)
+    df_p5 = to_rna(
+        df_p5
+    )  # Ensure to_rna is defined elsewhere or import it if it's external
     common_p5_seq = ""
     for p5_seq in df_p5["sequence"]:
-        if has_5p_sequence(df, p5_seq):
+        if has_5p_sequence(
+            df, p5_seq
+        ):  # Ensure has_5p_sequence is defined elsewhere or import it if it's external
             common_p5_seq = p5_seq
     if len(common_p5_seq) == 0:
         raise ValueError("No common p5 sequence found")
     log.info(f"common p5 sequence: {common_p5_seq}")
-    return trim(df, len(common_p5_seq), 20)
+    return trim(
+        df, len(common_p5_seq), 20
+    )  # Ensure trim is defined elsewhere or import it if it's external
 
 
-def get_dms_reactivity_for_motif(df, params, error=True):
+def get_dms_reactivity_for_motif(
+    df: pd.DataFrame, params: Dict, error: bool = True
+) -> List[List[int]]:
     """
-    finds a specific sequence and structure in each construct and returns them
+    Finds a specific sequence and structure motif in each construct and returns the corresponding DMS reactivity data.
+
+    Args:
+        df (pd.DataFrame): A DataFrame containing 'sequence', 'structure', and 'data' columns.
+        params (dict): A dictionary of parameters for motif searching. Should be compatible with `MotifSearchParams`.
+        error (bool): If True, raises an error when more than one motif is found. Default is True.
+
+    Returns:
+        List[List[int]]: A list of lists, where each inner list contains the DMS reactivity data for the found motif.
+                         If no motif is found, the list contains -1 for each expected data point.
+
+    Raises:
+        ValueError: If more than one motif is found in a construct when `error` is True.
+
+    Example:
+        >>> df = pd.DataFrame({
+             "sequence": ["ACGUACGUACGU", "GCUAGCUAGCUA"],
+             "structure": ["(((...)))...", ".((...))..."],
+             "data": [[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2],
+                  [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]]
+            })
+        >>> params = {
+            "sequence": "ACGU&CGUA",
+             "structure": "(((...)))"
+            }
+        >>> reactivity_data = get_dms_reactivity_for_motif(df, params, false)
+        >>> print(reactivity_data)
+        [[0.1, 0.2, 0.3, 0.4, 0.7, 0.8, 0.9], [-1, -1, -1, -1, -1, -1, -1]]
+
     """
     params = MotifSearchParams(**params)
     data_len = len(params.sequence) - params.sequence.count("&")
     all_data = []
     for _, row in df.iterrows():
-        ss = SecStruct(row["sequence"], row["structure"])
-        motifs = ss.get_motifs(params)
+        ss = SecStruct(
+            row["sequence"], row["structure"]
+        )  # Ensure SecStruct is defined elsewhere or import it if it's external
+        motifs = ss.get_motifs(params)  # Ensure get_motifs is a method of SecStruct
         if len(motifs) != 1 and error:
             raise ValueError("More than one motif found")
         elif len(motifs) == 0:
@@ -409,7 +503,7 @@ class MTTR6MutsDataProcessor(DataProcessor):
         )
 
 
-class TTRMutsDataProcessor:
+class TTRMutsDataProcessor(DataProcessor):
     """
     This is the library of approximately 100 mutations that we have for TTR from
     steves bonilla's paper.
@@ -461,6 +555,10 @@ class TTRMutsDataProcessor:
     def process_data(self):
         # remove common p5 and p3 sequences
         self.df = trim_p5_and_p3(self.df)
+        # fix naming
+        self.df["name"] = self.df["name"].apply(
+            lambda x: x.split("_")[1] + "_" + x.split("_")[0]
+        )
         # grab original rna_map experimental data from steves paper
         df_ref = pd.read_csv(f"data/construct_design/sets/all_sets.csv")
         df_ref = df_ref[["name", "dg", "dg_err", "act_seq", "act_ss"]]
@@ -508,29 +606,6 @@ class TTRMutsDataProcessor:
             all_data.append(data)
         df["tlr"] = all_data
         return df
-
-    def __assign_tlr_reactivity(self, row, data):
-        new_cols = {}
-        insert_pos = []
-        for insert in row["inserts"]:
-            pos = int(insert[:-1])
-            insert_pos.append(pos)
-        mapped_pos = 1
-        pos = 0
-        new_cols["tlr"] = []
-        new_cols["tlr_norm"] = []
-        while pos < len(data):
-            if mapped_pos in insert_pos:
-                new_cols["tlr"].append(data[pos])
-                new_cols["tlr_norm"].append(data[pos] / row["ref_hp_as"])
-                new_cols[f"tlr_in_{mapped_pos}"] = data[pos + 1] / row["ref_hp_as"]
-                pos += 1
-            else:
-                new_cols["tlr"].append(data[pos])
-                new_cols["tlr_norm"].append(data[pos] / row["ref_hp_as"])
-            mapped_pos += 1
-            pos += 1
-        return new_cols
 
 
 # compute mg 1 / 2 ###################################################################

@@ -321,7 +321,7 @@ def plot_pop_avg_traces_all(df, plot_sequence=False, ylim=None, **kwargs):
     return fig
 
 
-def plot_mg_titration_fit(x, y, mg_1_2, n, max_val, **kwargs):
+def plot_mg_titration_fit(x, y, mg_1_2, n, max_val, ax=None, **kwargs):
     """
     Plots the fit of a magnesium titration curve.
 
@@ -338,7 +338,8 @@ def plot_mg_titration_fit(x, y, mg_1_2, n, max_val, **kwargs):
 
     """
     norm_data = -normalize_data(np.array(y)) + 1
-    fig, ax = plt.subplots(1, 1, **kwargs)
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, **kwargs)
     ax.scatter(x, norm_data, s=100)
     xs, ys = [], []
     for j in np.arange(0, 45, 0.25):
@@ -388,3 +389,19 @@ def publication_scatter(ax, x, y, **kwargs):
         None
     """
     ax.scatter(x, y, s=150, **kwargs)
+
+
+def publication_line(ax, x, y, **kwargs):
+    """
+    Plots a line on the given axes object.
+
+    Args:
+        ax (matplotlib.axes.Axes): The axes object to plot on.
+        x (array-like): The x-coordinates of the line.
+        y (array-like): The y-coordinates of the line.
+        **kwargs: Additional keyword arguments to pass to the `plot` function.
+
+    Returns:
+        None
+    """
+    ax.plot(x, y, markersize=10, lw=2, **kwargs)

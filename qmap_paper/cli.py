@@ -41,6 +41,19 @@ log = get_logger("CLI")
 
 
 def get_motif_data(df_wt, df_uucg, motif_name, motif_seq, motif_ss):
+    """
+    Retrieves motif data from the given dataframes.
+
+    Args:
+        df_wt (pandas.DataFrame): DataFrame containing wild-type data.
+        df_uucg (pandas.DataFrame): DataFrame containing UUCG data.
+        motif_name (str): Name of the motif.
+        motif_seq (list): List of motif sequences.
+        motif_ss (list): List of motif secondary structures.
+
+    Returns:
+        pandas.DataFrame: DataFrame containing the retrieved motif data.
+    """
     data = []
     for i, row in df_wt.iterrows():
         count = 0
@@ -72,7 +85,7 @@ def get_motif_data(df_wt, df_uucg, motif_name, motif_seq, motif_ss):
 
 @click.group()
 def cli():
-    """cli for q_dms_ttr_paper"""
+    """cli for qmap_paper"""
     pass
 
 
@@ -80,7 +93,13 @@ def cli():
 @cli.command()
 def generate_sets():
     """
-    selects the TLR mutants from the bonilla et. al paper to be used in this study
+    Selects the TLR mutants from the Bonilla et. al paper to be used in this study.
+
+    This function reads a CSV file containing average dG values and filters the data based on certain criteria.
+    The filtered data is then split into groups and saved as separate CSV files.
+
+    Returns:
+        None
     """
     setup_applevel_logger()
     df = get_average_dg_dataframe()
@@ -127,6 +146,18 @@ def generate_sets():
 
 @cli.command()
 def generate_scaffold_sets():
+    """
+    Generates scaffold sets based on input CSV files.
+
+    This function reads CSV files from the 'data/construct_design/sets' directory,
+    generates scaffold sets, and saves them as CSV files in the 'data/construct_design/scaffold_sets' directory.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
     setup_applevel_logger()
     input_path = "data/construct_design/sets"
     output_path = "data/construct_design/scaffold_sets"
@@ -138,6 +169,15 @@ def generate_scaffold_sets():
 
 @cli.command()
 def randomize_helices():
+    """
+    Randomizes helices in the input CSV files and saves the randomized sets to the output directory.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
     setup_applevel_logger()
     input_path = "data/construct_design/scaffold_sets"
     output_path = "data/construct_design/randomized_sets"
@@ -151,6 +191,26 @@ def randomize_helices():
 
 @cli.command()
 def barcode_libraries():
+    """
+    Generate barcode libraries for mutated sets.
+
+    This function generates barcode libraries for mutated sets by executing the 'rld barcode2' command
+    with specific parameters. The input files are located in the 'data/construct_design/randomized_sets'
+    directory, and the output files will be saved in the 'data/construct_design/final_sets' directory.
+
+    The function creates the output directory if it doesn't exist and then iterates over a range of values
+    from 1 to 5. For each value, it constructs a command string using f-strings and executes it using the
+    'os.system' function.
+
+    Note: This function assumes that the 'rld' command and the required input files are available in the
+    system's PATH. rld is from https://github.com/jyesselm/rna_lib_design
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
     setup_applevel_logger()
     input_path = "data/construct_design/randomized_sets"
     output_path = "data/construct_design/final_sets"
@@ -165,6 +225,19 @@ def barcode_libraries():
 
 @cli.command()
 def generate_order():
+    """
+    Generates an order by merging and processing data from multiple CSV files.
+
+    This function reads multiple CSV files containing mutation data and merges them into a single DataFrame.
+    It then performs additional processing by merging the merged DataFrame with another DataFrame.
+    Finally, it saves the resulting DataFrame to a CSV file.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
     setup_applevel_logger()
     intput_path = "data/construct_design/final_sets"
     dfs = []
@@ -184,8 +257,16 @@ def generate_order():
 @cli.command()
 def get_sequencing_data():
     """
-    move data into this folder data/sequencing_runs/raw. Note will not work without
-    access to all Yesselman lab data.
+    Moves data into the 'data/sequencing_runs/raw' folder.
+    Note: This function requires access to all Yesselman lab data.
+
+    Returns:
+        None
+
+    Raises:
+        FileNotFoundError: If the specified file is not found.
+        Exception: If there is an error reading the CSV file.
+
     """
     setup_applevel_logger()
     local_data_path = "data/"
@@ -213,8 +294,19 @@ def get_sequencing_data():
 @cli.command()
 def process_sequencing_data():
     """
-    analyzed the sequencing data and saves the processed data in
-    data/sequencing_runs/processed
+    Analyzes the sequencing data and saves the processed data in
+    data/sequencing_runs/processed.
+
+    This function sets up the application-level logger, creates the necessary
+    directory for storing the processed data, and processes the sequencing data
+    using a list of data processors. Each data processor is responsible for
+    loading, cleaning, and processing a specific type of data.
+
+    Data Processors:
+    - MTTR6BufferTitrationDataProcessor: Processes MTTR6 buffer titration data.
+    - MTTR6MgTitrationDataProcessor: Processes MTTR6 Mg titration data.
+    - MTTR6MutsDataProcessor: Processes MTTR6 mutations data.
+    - TTRMutsDataProcessor: Processes TTR mutations data.
     """
     setup_applevel_logger()
     os.makedirs("data/sequencing_runs/processed", exist_ok=True)
