@@ -272,9 +272,9 @@ def generate_mttr6_scaffold_library(df, path):
     for i, row in df.iterrows():
         struct = insert_motif_into_mttr6_scaffold(row["act_seq"], row["act_ss"])
         folded_ss = vienna.fold(str(struct.sequence)).dot_bracket
-        if struct.dot_bracket != folded_ss:
+        if struct.structure != folded_ss:
             print("failed")
-        f.write(f"{row['name']},{struct.sequence},{struct.dot_bracket},{row['dg']}\n")
+        f.write(f"{row['name']},{struct.sequence},{struct.structure},{row['dg']}\n")
     f.close()
 
 
