@@ -16,11 +16,8 @@ jobs:
         miniconda-version: "latest"  # Ensure Miniconda is installed
         channels: conda-forge,bioconda,defaults
         auto-activate-base: true
+        python-version: 3.8
 
-    - name: Create and activate environment
-      run: |
-        conda create -n myenv python=3.8 -y
-        conda activate myenv
 
     - name: Install ViennaRNA
       run: conda install -c bioconda viennarna -y
