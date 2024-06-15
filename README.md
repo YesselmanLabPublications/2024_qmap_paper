@@ -11,6 +11,9 @@ Make sure to download the data used in this project from [10.6084/m9.figshare.25
 # Create a new conda environment
 conda create -n qmap_paper python=3.8
 
+# Activate the conda environment
+conda activate qmap_paper
+
 # Clone the repository
 git clone https://github.com/YesselmanLabPublications/2024_qmap_paper.git
 
