@@ -24,7 +24,7 @@ jobs:
     - name: Create and activate conda environment
       run: |
         conda create -n qmap_paper python=3.8 -y
-        echo "conda activate qmap_paper" >> $GITHUB_ENV
+        conda activate qmap_paper
 
     - name: Install the current repo
       run: |
