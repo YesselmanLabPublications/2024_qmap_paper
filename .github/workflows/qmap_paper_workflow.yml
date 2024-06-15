@@ -24,7 +24,6 @@ jobs:
 
     - name: Install the current repo
       run: |
-        cd 2024_qmap_paper
         pip install .
 
     - name: Download data
