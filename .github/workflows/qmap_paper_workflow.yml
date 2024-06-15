@@ -1,12 +1,6 @@
 name: QMAP Paper Workflow
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+on: [push]
 
 jobs:
   setup-and-run:
@@ -19,12 +13,17 @@ jobs:
     - name: Set up Miniconda
       uses: conda-incubator/setup-miniconda@v2
       with:
-        python-version: 3.8
+        miniconda-version: "latest"  # Ensure Miniconda is installed
+        channels: conda-forge,bioconda,defaults
+        auto-activate-base: true
 
     - name: Create and activate conda environment
       run: |
         conda create -n qmap_paper python=3.8 -y
         conda activate qmap_paper
+
+    - name: Install ViennaRNA
+      run: conda install -c bioconda viennarna -y
 
     - name: Install the current repo
       run: |
@@ -36,9 +35,6 @@ jobs:
 
     - name: Unzip data
       run: unzip data.zip
-
-    - name: Install ViennaRNA
-      run: conda install -c bioconda viennarna -y
 
     - name: Generate sets
       run: python qmap_paper/cli.py generate-sets
