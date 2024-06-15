@@ -208,7 +208,6 @@ def get_aligned_sequence_and_ins_del(df: pd.DataFrame) -> pd.DataFrame:
     df["size"] = [len(s) for s in df["r_seq"]]
     for ii, row in df.iterrows():
         if len(row["name"]) > len(wt_seq):
-            print(row["name"])
             inserts, aligned_seq = get_insertions(wt_seqs, row["r_seq"])
             df.at[ii, "insertions"] = inserts
             df.at[ii, "aligned_seq"] = aligned_seq
