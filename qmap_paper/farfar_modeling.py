@@ -1,6 +1,11 @@
 import os
 from biopandas.pdb import PandasPdb
 
+from qmap_paper.logger import get_logger
+
+script_name = os.path.splitext(os.path.basename(__file__))[0]
+log = get_logger(script_name)
+
 fasta_txt = """
 >loop
 ggaaac
@@ -55,12 +60,15 @@ def setup_farfar_modeling_runs(df):
     Returns:
         None
     """
-    output_path = "test_output/farfar_modeling"
+    log.info("Setting up FARFAR modeling runs...")
+    output_path = "farfar_runs/"
+    log.info(f"Output path: {output_path}")
     os.makedirs(output_path, exist_ok=True)
+    pdb_path = "data/pdbs/farfar2_modeling/"
     for i, row in df.iterrows():
-        df_pdb = get_dataframe_from_pdb("start.pdb")
+        df_pdb = get_dataframe_from_pdb(f"{pdb_path}/start.pdb")
         new_name = row["act_seq"].replace("&", "_")
-        dir_name = f"runs/{new_name}"
+        dir_name = f"{output_path}/{new_name}"
         os.makedirs(dir_name, exist_ok=True)
         seqs = row["act_seq"].lower().split("&")
         fasta_str = fasta_txt.format(seq1=seqs[0], seq2=seqs[1])
@@ -76,9 +84,9 @@ def setup_farfar_modeling_runs(df):
         res_2_num = len(seqs[0]) + len(seqs[1]) + pos + 2
         df_pdb.loc[df_pdb["residue_number"] == 21, "residue_number"] = res_2_num
         write_pdb(df_pdb, f"{dir_name}/start.pdb")
-        os.chdir(dir_name)
-        os.system(
-            "rna_denovo.macosclangrelease -fasta test.fasta -secstruct_file "
-            "test.secstruct_file -s start.pdb -minimize_rna true -nstruct 1"
-        )
-        os.chdir("../..")
+        # os.chdir(dir_name)
+        # os.system(
+        #    "rna_denovo.macosclangrelease -fasta test.fasta -secstruct_file "
+        #    "test.secstruct_file -s start.pdb -minimize_rna true -nstruct 1"
+        # )
+        # os.chdir("../..")

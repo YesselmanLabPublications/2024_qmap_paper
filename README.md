@@ -1,4 +1,6 @@
 # 2024_qmap_paper
+Analysis code for: "High-throughput determination of RNA tertiary contact thermodynamics by quantitative DMS chemical mapping"<br>
+preprint: https://www.biorxiv.org/content/10.1101/2024.03.11.584472v1.full.pdf
 
 ## Data Download
 Make sure to download the data used in this project from [10.6084/m9.figshare.25331758](https://figshare.com/articles/dataset/data/25331758). Unzip this data and store it in the `data/` directory within the current project directory.
@@ -117,6 +119,11 @@ python qmap_paper/cli.py process-mg-1-2
 ```
 
 ## generating plots 
+These are plots used in supplemental figures 
+This plots 
+```
+python qmap_paper/cli.py plot-raw-mut-fractions
+```
 
 
 

@@ -4,7 +4,7 @@ Functions to generate the constructs used in this study
 
 import pandas as pd
 import vienna
-from rna_lib_design.structure import rna_structure
+from seq_tools.structure import SequenceStructure
 from rna_secstruct_design.selection import get_selection, SecStruct
 from rna_secstruct_design.helix_randomizer import HelixRandomizer
 
@@ -244,14 +244,14 @@ def insert_motif_into_mttr6_scaffold(m_seq, m_ss):
     """
     seq = "GAGCCUAUGGCUGCCACCCGAGCCCUUGAACUACAGGGAACACUGGAAACAGUACCCCCUGCAAGGGCGUUUGACGGUGGCAGCCUAAGGGCUC"
     ss = "((((((..((((((((((((((((((((.....(((((...((((....))))...))))))))))))..)))..))))))))))...))))))"
-    struct = rna_structure(seq, ss)
+    struct = SequenceStructure(seq, ss)
     sub_1 = struct[:4]
     sub_2 = struct[10:-11]
     sub_3 = struct[-4:]
     seqs = m_seq.split("&")
     sss = m_ss.split("&")
-    m_struct_1 = rna_structure(seqs[0], sss[0])
-    m_struct_2 = rna_structure(seqs[1], sss[1])
+    m_struct_1 = SequenceStructure(seqs[0], sss[0])
+    m_struct_2 = SequenceStructure(seqs[1], sss[1])
     new_struct = sub_1 + m_struct_1 + sub_2 + m_struct_2 + sub_3
     return new_struct
 

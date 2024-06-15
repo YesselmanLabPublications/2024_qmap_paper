@@ -34,9 +34,10 @@ from qmap_paper.construct_design import (
 )
 from qmap_paper.sasa import compute_solvent_accessability
 from qmap_paper.farfar_modeling import setup_farfar_modeling_runs
+import logging
 
 
-log = get_logger("CLI")
+log = get_logger("cli")
 
 
 def get_motif_data(df_wt, df_uucg, motif_name, motif_seq, motif_ss):
@@ -367,20 +368,32 @@ def process_mg_1_2():
     Compute mg 1/2 for ttr mutants
     """
     setup_applevel_logger()
-    path = "q_dms_ttr_paper/data/processed/mttr6_data_full.json"
+    path = "data/sequencing_runs/processed/mttr6_data_full.json"
     if not os.path.isfile(path):
         log.error("File not found: " + path)
         return
     df = pd.read_json(path)
     df_results = compute_all_mg_1_2(df)
-    df_results.to_csv(
-        "q_dms_ttr_paper/data/processed/mtt6_data_mg_1_2.csv", index=False
-    )
+    df_results.to_csv("data/mg_1_2_fits/mtt6_data_mg_1_2.csv", index=False)
 
 
 @cli.command()
 def generate_3d_modeling_runs():
-    pass
+    """
+    Generates 3D modeling runs based on the constructs specified in the 'constructs.csv' file.
+
+    This function sets up the application-level logger, reads the construct data from the 'constructs.csv' file,
+    and then sets up the 3D modeling runs using the 'setup_farfar_modeling_runs' function.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
+    setup_applevel_logger()
+    df = pd.read_csv("data/construct_design/constructs.csv")
+    setup_farfar_modeling_runs(df)
 
 
 # plot generation ####################################################################
@@ -389,17 +402,32 @@ def generate_3d_modeling_runs():
 @cli.command()
 def plot_raw_mut_fractions():
     """
-    plot raw mut fractions. Shows the full pop avg for eac titration point
+    Plots the raw mutation fractions for different titration points.
+    Shows the full population average for each titration point.
+
+    Args:
+        None
+
+    Returns:
+        None
     """
     setup_applevel_logger()
+    log.info("Plotting raw mutation fractions")
+    log.info("all plots will be in plots/")
+    os.makedirs("plots", exist_ok=True)
+    log.info(
+        "PLots containing the full construct will be plots/titration_full_construct"
+    )
     os.makedirs("plots/titration_full_construct", exist_ok=True)
     # mg2+ titrations
-    json_path = "q_dms_ttr_paper/data/processed/wt_mg_titra.json"
+    log.info("Plotting wild-type mg2+ titrations")
+    json_path = "data/sequencing_runs/processed/wt_mg_titra.json"
     df = pd.read_json(json_path)
     highlights = []
     highlights.append({"motif": {"name": "gaaa_tetraloop"}})
     highlights.append({"motif": {"name": "tlr"}})
     path = f"plots/titration_full_construct/wt_mg_titra/"
+    log.info("These plots will be found: plots/titration_full_construct/wt_mg_titra/")
     os.makedirs(path, exist_ok=True)
     for (name, exp_name), g in df.groupby(["name", "exp_name"]):
         os.makedirs(f"{path}/{exp_name}", exist_ok=True)
@@ -408,10 +436,15 @@ def plot_raw_mut_fractions():
         plt.tight_layout()
         plt.savefig(f"{path}/{exp_name}/{name}.png", dpi=300)
         plt.clf()
+        log.info(f"Plotted raw mutation fractions for {name} in {exp_name} experiment.")
     # buffer titrations
-    json_path = "q_dms_ttr_paper/data/processed/wt_buffer_titra.json"
+    json_path = "data/sequencing_runs/processed/wt_buffer_titra.json"
     df = pd.read_json(json_path)
     path = f"plots/titration_full_construct/wt_buffer_titra/"
+    log.info("Plotting wild-type mg2+ titrations with different buffers")
+    log.info(
+        "These plots will be found: plots/titration_full_construct/wt_buffer_titra/"
+    )
     os.makedirs(path, exist_ok=True)
     for (name, buffer, exp_name), g in df.groupby(["name", "buffer", "exp_name"]):
         os.makedirs(f"{path}/{exp_name}_buffer_{buffer}", exist_ok=True)
@@ -420,8 +453,11 @@ def plot_raw_mut_fractions():
         plt.tight_layout()
         plt.savefig(f"{path}/{exp_name}_buffer_{buffer}/{name}.png", dpi=300)
         plt.clf()
+        log.info(
+            f"Plotted raw mutation fractions for {name} in {exp_name} experiment with {buffer} buffer."
+        )
     # mttr6 muts
-    json_path = "q_dms_ttr_paper/data/processed/mttr6_muts_titra.json"
+    json_path = "data/sequencing_runs/processed/mttr6_muts_titra.json"
     df = pd.read_json(json_path)
     path = f"plots/titration_full_construct/mttr6_muts_titra/"
     os.makedirs(path, exist_ok=True)
@@ -436,10 +472,11 @@ def plot_raw_mut_fractions():
         plt.tight_layout()
         plt.savefig(f"{path}/{name}.png", dpi=300)
         plt.clf()
+        log.info(f"Plotted raw mutation fractions for {name} in {exp_name} experiment.")
     # tlr muts
     highlights = []
     highlights.append({"motif": {"name": "gaaa_tetraloop"}})
-    json_path = "q_dms_ttr_paper/data/processed/mttr6_data_full.json"
+    json_path = "data/sequencing_runs/processed/mttr6_data_full.json"
     df = pd.read_json(json_path)
     path = f"plots/titration_full_construct/mttr6_data_full/"
     os.makedirs(path, exist_ok=True)
@@ -449,109 +486,84 @@ def plot_raw_mut_fractions():
         plt.tight_layout()
         plt.savefig(f"{path}/{name}.png", dpi=300)
         plt.clf()
+        log.info(f"Plotted raw mutation fractions for {name}.")
 
 
-@cli.command()
 def plot_titrations():
     """
-    plot titration as a function of mg2+ taking the average of gaaa tetraloop avg
+    Plot titration as a function of mg2+ taking the average of gaaa tetraloop avg.
+
+    This function reads data from JSON files, performs calculations, and generates plots for titration experiments.
+    It saves the plots in the specified directories.
+
+    Args:
+        None
+
+    Returns:
+        None
     """
     setup_applevel_logger()
+    # Create directories for saving plots
+    log.info("Creating directory: plots/titration_fits")
     os.makedirs("plots/titration_fits", exist_ok=True)
-    json_path = "q_dms_ttr_paper/data/processed/wt_mg_titra.json"
+
+    # Process wild-type titration data
+    json_path = "data/sequencing_runs/processed/wt_mg_titra.json"
+    log.info(f"Reading JSON data from {json_path}")
     df = pd.read_json(json_path)
     path = f"plots/titration_fits/wt_mg_titra/"
+    log.info(f"Creating directory: {path}")
     os.makedirs(path, exist_ok=True)
     for (name, exp_name), g in df.groupby(["name", "exp_name"]):
-        os.makedirs(f"{path}/{exp_name}", exist_ok=True)
+        exp_path = f"{path}/{exp_name}"
+        log.info(f"Creating directory: {exp_path}")
+        os.makedirs(exp_path, exist_ok=True)
+        log.info(f"Computing mg_1_2 fit for {name} in {exp_name}")
         pfit, perr = compute_mg_1_2(g["mg_conc"], g["gaaa_avg"])
+        log.info(f"Plotting titration fit for {name} in {exp_name}")
         plot_mg_titration_fit(g["mg_conc"], g["gaaa_avg"], pfit[0], pfit[1], pfit[2])
         plt.title(f"{name} - mg_1_2: {round(pfit[0], 3)} - n: {round(pfit[1], 2)}")
-        plt.savefig(f"{path}/{exp_name}/{name}_fit.png", dpi=300)
+        plot_path = f"{exp_path}/{name}_fit.png"
+        log.info(f"Saving plot to {plot_path}")
+        plt.savefig(plot_path, dpi=300)
         plt.clf()
-    # mttr6 muts
-    json_path = "q_dms_ttr_paper/data/processed/mttr6_muts_titra.json"
+
+    # Process mttr6 mutations titration data
+    json_path = "data/sequencing_runs/processed/mttr6_muts_titra.json"
+    log.info(f"Reading JSON data from {json_path}")
     df = pd.read_json(json_path)
     path = f"plots/titration_fits/mttr6_muts_titra/"
+    log.info(f"Creating directory: {path}")
     os.makedirs(path, exist_ok=True)
     for (name, exp_name), g in df.groupby(["name", "exp_name"]):
+        log.info(f"Computing mg_1_2 fit for {name} in {exp_name}")
         pfit, perr = compute_mg_1_2(g["mg_conc"], g["gaaa_avg"])
+        log.info(f"Plotting titration fit for {name} in {exp_name}")
         plot_mg_titration_fit(g["mg_conc"], g["gaaa_avg"], pfit[0], pfit[1], pfit[2])
-        plt.title(f"{name} - mg_1_2: {round(pfit[0], 3)} - n: {round(pfit[1], 2)}")
-        plt.savefig(f"{path}/{name}_fit.png", dpi=300)
+        plot_path = f"{path}/{name}_fit.png"
+        log.info(f"Saving plot to {plot_path}")
+        plt.savefig(plot_path, dpi=300)
         plt.clf()
-    # tlr muts
-    json_path = "q_dms_ttr_paper/data/processed/mttr6_data_full.json"
+
+    # Process full mttr6 data excluding mg_conc 5.0
+    json_path = "data/sequencing_runs/processed/mttr6_data_full.json"
+    log.info(f"Reading JSON data from {json_path}")
     df = pd.read_json(json_path)
-    # todo this is only for the first set
+    log.info("Filtering out rows where mg_conc is 5.0")
     df = df[df["mg_conc"] != 5.0]
     path = f"plots/titration_fits/mttr6_data_full/"
+    log.info(f"Creating directory: {path}")
     os.makedirs(path, exist_ok=True)
     for name, g in df.groupby(["name"]):
+        log.info(f"Computing mg_1_2 fit for {name}")
         pfit, perr = compute_mg_1_2(g["mg_conc"], g["gaaa_avg"])
+        log.info(f"Plotting titration fit for {name}")
         plot_mg_titration_fit(g["mg_conc"], g["gaaa_avg"], pfit[0], pfit[1], pfit[2])
         plt.title(f"{name} - mg_1_2: {round(pfit[0], 3)} - n: {round(pfit[1], 2)}")
-        plt.savefig(f"{path}/{name}_fit.png", dpi=300)
+        plot_path = f"{path}/{name}_fit.png"
+        log.info(f"Saving plot to {plot_path}")
+        plt.savefig(plot_path, dpi=300)
         plt.clf()
-
-
-@cli.command()
-def plot_other_motif_diff():
-    def _plot(df, m_name):
-        for i, (name, g) in enumerate(df.groupby("name")):
-            plt.title(name, fontsize=20)
-            plt.scatter(g["wt_val"], g["uucg_val"])
-            plt.xlabel("WT Mut. Frac.", fontsize=16)
-            plt.ylabel("TL-Knockout Mut. Frac.", fontsize=16)
-            plt.axis("square")
-            plt.savefig(f"plots/other_motifs/{m_name}-{name}.png", dpi=300)
-            plt.clf()
-
-    setup_applevel_logger()
-    os.makedirs("plots/other_motifs", exist_ok=True)
-    json_path = "q_dms_ttr_paper/data/processed/wt_mg_titra.json"
-    df_wt = pd.read_json(json_path)
-    df_wt = df_wt[df_wt["exp_name"] == "2022_07_27_C0117_50mM_NaC_Mg2+_titra_CM"]
-    json_path = "q_dms_ttr_paper/data/processed/mttr6_muts_titra.json"
-    df_muts = pd.read_json(json_path)
-    df_uucg = df_muts[df_muts["name"] == "minittr_6_uucg_fixed"]
-    df_uucg = df_uucg.sort_values("mg_conc")
-    # ires
-    sequence = "GAACUACGC"
-    structure = "(.....())"
-    df = get_motif_data(df_wt, df_uucg, "ires", sequence, structure)
-    _plot(df, "ires")
-    sequence = "CCGAG&CGUUUGACG"
-    structure = "(((((&)..)))..)"
-    df = get_motif_data(df_wt, df_uucg, "kink_turn", sequence, structure)
-    _plot(df, "kink_turn")
-    sequence = "GAACA&UACCC"
-    structure = "(...(&)...)"
-    df = get_motif_data(df_wt, df_uucg, "3x3_motif", sequence, structure)
-    _plot(df, "3x3_motif")
-
-
-@cli.command()
-@click.option("-n", "--name", default="minittr_6_uucg_fixed")
-@click.option("-m", "--mg_conc", default=10.0)
-def plot_mut_histo(name, mg_conc):
-    data_files = [
-        "mttr6_data_full.json",
-        "mttr6_muts_titra.json",
-        "wt_buffer_titra.json",
-        "wt_mg_titra.json",
-    ]
-    dfs = []
-    for f in data_files:
-        path = os.path.join(DATA_PATH, "processed", f)
-        df = pd.read_json(path)
-        dfs.append(df)
-    df = pd.concat(dfs)
-    df = df[df["name"] == name]
-    df = df[df["mg_conc"] == mg_conc]
-    plot_pop_avg_from_row(df.iloc[0])
-    # plt.ylim(0, 0.08)
-    plt.show()
 
 
 if __name__ == "__main__":

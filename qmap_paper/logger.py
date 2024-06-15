@@ -3,7 +3,7 @@ import sys
 
 # logging #####################################################################
 
-APP_LOGGER_NAME = "Q-DMS-TTR-PAPER"
+APP_LOGGER_NAME = "qmap_paper"
 
 
 def setup_applevel_logger(logger_name=APP_LOGGER_NAME, is_debug=False, file_name=None):
