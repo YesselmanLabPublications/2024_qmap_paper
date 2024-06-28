@@ -29,7 +29,6 @@ jobs:
         source ~/.bashrc
         conda activate qmap-env
         conda install -c bioconda viennarna -y
-        conda install -c conda-forge,bioconda,defaults python=3.8 -y
 
     - name: Install the current repo
       shell: bash -l {0}
