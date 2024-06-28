@@ -18,39 +18,66 @@ jobs:
         auto-activate-base: true
         python-version: 3.8
 
-
-    - name: Install ViennaRNA
-      run: conda install -c bioconda viennarna -y
+    - name: Create environment and install dependencies
+      run: |
+        conda create --name qmap-env -y
+        conda activate qmap-env
+        conda install -c bioconda viennarna -y
+        conda install -c conda-forge,bioconda,defaults python=3.8 -y
 
     - name: Install the current repo
       run: |
+        conda activate qmap-env
         pip install .
 
+    - name: Verify ViennaRNA installation
+      run: |
+        conda activate qmap-env
+        which RNAfold
+        RNAfold --version
+
     - name: Download data
-      run: wget -O data.zip https://figshare.com/ndownloader/files/44981896
+      run: |
+        conda activate qmap-env
+        wget -O data.zip https://figshare.com/ndownloader/files/44981896
 
     - name: Unzip data
-      run: unzip data.zip
+      run: |
+        conda activate qmap-env
+        unzip data.zip
 
     - name: Generate sets
-      run: python qmap_paper/cli.py generate-sets
+      run: |
+        conda activate qmap-env
+        python qmap_paper/cli.py generate-sets
 
     - name: Generate scaffold sets
-      run: python qmap_paper/cli.py generate-scaffold-sets
+      run: |
+        conda activate qmap-env
+        python qmap_paper/cli.py generate-scaffold-sets
 
     - name: Randomize helices
-      run: python qmap_paper/cli.py randomize-helices
+      run: |
+        conda activate qmap-env
+        python qmap_paper/cli.py randomize-helices
 
     - name: Barcode libraries
-      run: python qmap_paper/cli.py barcode-libraries
+      run: |
+        conda activate qmap-env
+        python qmap_paper/cli.py barcode-libraries
 
     - name: Clean up and unzip data again
       run: |
+        conda activate qmap-env
         rm -rf data
         unzip data.zip
 
     - name: Process sequencing data
-      run: python qmap_paper/cli.py process-sequencing-data
+      run: |
+        conda activate qmap-env
+        python qmap_paper/cli.py process-sequencing-data
 
     - name: Characterize mutations
-      run: python qmap_paper/cli.py characterize-mutations
+      run: |
+        conda activate qmap-env
+        python qmap_paper/cli.py characterize-mutations
